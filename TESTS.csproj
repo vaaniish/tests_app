@@ -46,43 +46,34 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Test.cs">
+    <Compile Include="admin_login.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Test.Designer.cs">
-      <DependentUpon>Test.cs</DependentUpon>
+    <Compile Include="admin_login.Designer.cs">
+      <DependentUpon>admin_login.cs</DependentUpon>
     </Compile>
-    <Compile Include="Test_CRUD.cs">
+    <Compile Include="admin_panel.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Test_CRUD.Designer.cs">
-      <DependentUpon>Test_CRUD.cs</DependentUpon>
+    <Compile Include="admin_panel.Designer.cs">
+      <DependentUpon>admin_panel.cs</DependentUpon>
     </Compile>
-    <Compile Include="Sign_In.cs">
+    <Compile Include="start.cs">
       <SubType>Form</SubType>
     </Compile>
-    <Compile Include="Sign_In.Designer.cs">
-      <DependentUpon>Sign_In.cs</DependentUpon>
-    </Compile>
-    <Compile Include="Enter.cs">
-      <SubType>Form</SubType>
-    </Compile>
-    <Compile Include="Enter.Designer.cs">
-      <DependentUpon>Enter.cs</DependentUpon>
+    <Compile Include="start.Designer.cs">
+      <DependentUpon>start.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <EmbeddedResource Include="Test.resx">
-      <DependentUpon>Test.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Test_CRUD.resx">
-      <DependentUpon>Test_CRUD.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Sign_In.resx">
-      <DependentUpon>Sign_In.cs</DependentUpon>
-    </EmbeddedResource>
-    <EmbeddedResource Include="Enter.resx">
-      <DependentUpon>Enter.cs</DependentUpon>
+    <Compile Include="test_panel.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="test_panel.Designer.cs">
+      <DependentUpon>test_panel.cs</DependentUpon>
+    </Compile>
+    <EmbeddedResource Include="start.resx">
+      <DependentUpon>start.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>

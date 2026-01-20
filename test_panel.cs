@@ -10,9 +10,9 @@ using System.Windows.Forms;
 
 namespace TESTS
 {
-    public partial class Enter : Form
+    public partial class test_panel : Form
     {
-        public Enter()
+        public test_panel()
         {
             InitializeComponent();
         }

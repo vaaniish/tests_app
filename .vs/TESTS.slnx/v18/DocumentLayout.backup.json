@@ -1,10 +1,22 @@
 {
   "Version": 1,
-  "WorkspaceRootPath": "C:\\Study\\Automotization Vakhrushev\\Course Work\\TESTS\\",
+  "WorkspaceRootPath": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\course work\\tests\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
-      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\tests_app\\admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\tests_app\\admin_panel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:admin_panel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\tests_app\\test_panel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:test_panel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\tests_app\\start.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:start.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
     }
   ],
   "DocumentGroupContainers": [
@@ -19,18 +31,50 @@
             {
               "$type": "Document",
               "DocumentIndex": 0,
-              "Title": "Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
-              "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\Course Work\\TESTS\\Form1.cs",
-              "RelativeDocumentMoniker": "Form1.cs",
-              "ToolTip": "C:\\Study\\Automotization Vakhrushev\\Course Work\\TESTS\\Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
-              "RelativeToolTip": "Form1.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "Title": "admin_login.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\admin_login.cs",
+              "RelativeDocumentMoniker": "admin_login.cs",
+              "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\admin_login.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "RelativeToolTip": "admin_login.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-01-20T13:27:49.77Z",
+              "WhenOpened": "2026-01-20T16:44:49.966Z",
               "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]"
             },
             {
-              "$type": "Bookmark",
-              "Name": "ST:0:0:{cce594b6-0c39-4442-ba28-10c64ac7e89f}"
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "admin_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\admin_panel.cs",
+              "RelativeDocumentMoniker": "admin_panel.cs",
+              "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\admin_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "RelativeToolTip": "admin_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-20T16:44:30.893Z",
+              "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "test_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\test_panel.cs",
+              "RelativeDocumentMoniker": "test_panel.cs",
+              "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\test_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "RelativeToolTip": "test_panel.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-20T16:43:53.226Z",
+              "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "start.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\start.cs",
+              "RelativeDocumentMoniker": "start.cs",
+              "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\TESTS_APP\\tests_app\\start.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "RelativeToolTip": "start.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-20T13:27:49.77Z",
+              "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]"
             }
           ]
         }

@@ -1,6 +1,6 @@
 ﻿namespace TESTS
 {
-    partial class Enter
+    partial class start
     {
         /// <summary>
         /// Обязательная переменная конструктора.
