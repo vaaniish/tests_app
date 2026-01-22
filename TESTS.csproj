@@ -72,6 +72,9 @@
     <Compile Include="test_panel.Designer.cs">
       <DependentUpon>test_panel.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="admin_login.resx">
+      <DependentUpon>admin_login.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="start.resx">
       <DependentUpon>start.cs</DependentUpon>
     </EmbeddedResource>
@@ -84,6 +87,9 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="test_panel.resx">
+      <DependentUpon>test_panel.cs</DependentUpon>
+    </EmbeddedResource>
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
