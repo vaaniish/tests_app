@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.Windows.Forms.DataGridViewCellStyle dataGridViewCellStyle1 = new System.Windows.Forms.DataGridViewCellStyle();
             this.dataGridView1 = new System.Windows.Forms.DataGridView();
             this.contextMenuStrip1 = new System.Windows.Forms.ContextMenuStrip(this.components);
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -48,6 +49,14 @@
             // dataGridView1
             // 
             this.dataGridView1.BackgroundColor = System.Drawing.Color.White;
+            dataGridViewCellStyle1.Alignment = System.Windows.Forms.DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = System.Drawing.SystemColors.Control;
+            dataGridViewCellStyle1.Font = new System.Drawing.Font("Arial", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            dataGridViewCellStyle1.ForeColor = System.Drawing.SystemColors.WindowText;
+            dataGridViewCellStyle1.SelectionBackColor = System.Drawing.SystemColors.Highlight;
+            dataGridViewCellStyle1.SelectionForeColor = System.Drawing.SystemColors.HighlightText;
+            dataGridViewCellStyle1.WrapMode = System.Windows.Forms.DataGridViewTriState.True;
+            this.dataGridView1.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
             this.dataGridView1.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
             this.dataGridView1.Columns.AddRange(new System.Windows.Forms.DataGridViewColumn[] {
             this.Question,
@@ -55,9 +64,9 @@
             this.TrueAnswer,
             this.Edit,
             this.Delete});
-            this.dataGridView1.Location = new System.Drawing.Point(12, 117);
+            this.dataGridView1.Location = new System.Drawing.Point(12, 53);
             this.dataGridView1.Name = "dataGridView1";
-            this.dataGridView1.Size = new System.Drawing.Size(1245, 633);
+            this.dataGridView1.Size = new System.Drawing.Size(1344, 697);
             this.dataGridView1.TabIndex = 0;
             this.dataGridView1.CellContentClick += new System.Windows.Forms.DataGridViewCellEventHandler(this.dataGridView1_CellContentClick);
             // 
@@ -74,7 +83,7 @@
             this.добавитьВопросToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1269, 35);
+            this.menuStrip1.Size = new System.Drawing.Size(1368, 35);
             this.menuStrip1.TabIndex = 1;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -84,25 +93,25 @@
             this.аФЫАБФАБАБАБАБToolStripMenuItem,
             this.аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem});
             this.названиеТестаToolStripMenuItem.Name = "названиеТестаToolStripMenuItem";
-            this.названиеТестаToolStripMenuItem.Size = new System.Drawing.Size(176, 28);
+            this.названиеТестаToolStripMenuItem.Size = new System.Drawing.Size(196, 31);
             this.названиеТестаToolStripMenuItem.Text = "Название теста";
             // 
             // добавитьВопросToolStripMenuItem
             // 
             this.добавитьВопросToolStripMenuItem.Name = "добавитьВопросToolStripMenuItem";
-            this.добавитьВопросToolStripMenuItem.Size = new System.Drawing.Size(114, 20);
+            this.добавитьВопросToolStripMenuItem.Size = new System.Drawing.Size(209, 31);
             this.добавитьВопросToolStripMenuItem.Text = "Добавить вопрос";
             // 
             // аФЫАБФАБАБАБАБToolStripMenuItem
             // 
             this.аФЫАБФАБАБАБАБToolStripMenuItem.Name = "аФЫАБФАБАБАБАБToolStripMenuItem";
-            this.аФЫАБФАБАБАБАБToolStripMenuItem.Size = new System.Drawing.Size(404, 28);
+            this.аФЫАБФАБАБАБАБToolStripMenuItem.Size = new System.Drawing.Size(444, 32);
             this.аФЫАБФАБАБАБАБToolStripMenuItem.Text = "АФЫАБФАБАБАБАБ";
             // 
             // аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem
             // 
             this.аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem.Name = "аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem";
-            this.аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem.Size = new System.Drawing.Size(404, 28);
+            this.аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem.Size = new System.Drawing.Size(444, 32);
             this.аБАБАБАБАБАБАБАББАБАБАБАToolStripMenuItem.Text = "АБАБАБАБАБАБАБАББАБАБАБА";
             // 
             // Question
@@ -121,6 +130,7 @@
             // 
             this.TrueAnswer.HeaderText = "Правильный ответ";
             this.TrueAnswer.Name = "TrueAnswer";
+            this.TrueAnswer.Width = 200;
             // 
             // Edit
             // 
@@ -142,7 +152,7 @@
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1269, 762);
+            this.ClientSize = new System.Drawing.Size(1368, 762);
             this.Controls.Add(this.menuStrip1);
             this.Controls.Add(this.dataGridView1);
             this.MainMenuStrip = this.menuStrip1;
