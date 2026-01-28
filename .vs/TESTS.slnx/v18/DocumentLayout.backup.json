@@ -3,12 +3,12 @@
   "WorkspaceRootPath": "C:\\Study\\Automotization Vakhrushev\\tests_app\\tests_app\\",
   "Documents": [
     {
-      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
-      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
-    },
-    {
       "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
       "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|solutionrelative:admin_login.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
     },
     {
       "AbsoluteMoniker": "D:0:0:{DBFC8774-767C-482B-9525-FEAE8168E015}|TESTS.csproj|c:\\study\\automotization vakhrushev\\tests_app\\tests_app\\admin_panel.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
@@ -34,11 +34,11 @@
       "DocumentGroups": [
         {
           "DockedWidth": 200,
-          "SelectedChildIndex": 1,
+          "SelectedChildIndex": 0,
           "Children": [
             {
               "$type": "Document",
-              "DocumentIndex": 1,
+              "DocumentIndex": 0,
               "Title": "admin_login.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u043A\u0442\u043E\u0440]",
               "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\tests_app\\admin_login.cs",
               "RelativeDocumentMoniker": "admin_login.cs",
@@ -50,13 +50,13 @@
             },
             {
               "$type": "Document",
-              "DocumentIndex": 0,
+              "DocumentIndex": 1,
               "Title": "admin_login.cs",
               "DocumentMoniker": "C:\\Study\\Automotization Vakhrushev\\tests_app\\tests_app\\admin_login.cs",
               "RelativeDocumentMoniker": "admin_login.cs",
               "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\tests_app\\admin_login.cs",
               "RelativeToolTip": "admin_login.cs",
-              "ViewState": "AgIAAB4AAAAAAAAAAAArwFMAAAARAAAAAAAAAA==",
+              "ViewState": "AgIAABkAAAAAAAAAAAAswGEAAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-28T11:08:30.119Z",
               "EditorCaption": ""
@@ -106,7 +106,7 @@
               "RelativeDocumentMoniker": "start.cs",
               "ToolTip": "C:\\Study\\Automotization Vakhrushev\\tests_app\\tests_app\\start.cs",
               "RelativeToolTip": "start.cs",
-              "ViewState": "AgIAADMAAAAAAAAAAAAWwGEAAAAMAAAAAAAAAA==",
+              "ViewState": "AgIAADMAAAAAAAAAAAAWwG0AAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-01-25T12:09:00.601Z",
               "EditorCaption": ""

@@ -74,7 +74,7 @@ namespace TESTS
             }
 
             var hash = ComputeSha256(password);
-            //MessageBox.Show(hash);
+            MessageBox.Show(hash);
 
             if (hash != AdminPasswordHash)
             {
