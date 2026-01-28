@@ -24,30 +24,6 @@ namespace TESTS
         {
         }
 
-        private void btnLogin_Click(object sender, EventArgs e)
-        {
-            var login = tbLogin.Text.Trim();
-            var password = tbPassword.Text;
-
-            if (login != AdminLogin)
-            {
-                MessageBox.Show("Неверный логин");
-                return;
-            }
-
-            var hash = ComputeSha256(password);
-
-            if (hash != AdminPasswordHash)
-            {
-                MessageBox.Show("Неверный пароль");
-                return;
-            }
-
-            // УСПЕШНЫЙ ВХОД
-            this.DialogResult = DialogResult.OK;
-            this.Close();
-        }
-
         private string ComputeSha256(string input)
         {
             using (var sha = SHA256.Create())
@@ -74,7 +50,7 @@ namespace TESTS
             }
 
             var hash = ComputeSha256(password);
-            MessageBox.Show(hash);
+            //MessageBox.Show(hash);
 
             if (hash != AdminPasswordHash)
             {
