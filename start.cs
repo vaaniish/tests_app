@@ -92,5 +92,20 @@ namespace TESTS
                 this.Show();
             }
         }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            using (var adminForm = new admin_login())
+            {
+                this.Hide();
+                adminForm.ShowDialog(this); // модальное окно
+                this.Show();
+            }
+        }
+
+        private void start_Load_1(object sender, EventArgs e)
+        {
+
+        }
     }
 }
