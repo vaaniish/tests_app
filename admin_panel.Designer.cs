@@ -117,7 +117,8 @@
             // 
             this.Column1.HeaderText = "Тип вопроса";
             this.Column1.Name = "Column1";
-            this.Column1.Width = 140;
+            this.Column1.Resizable = System.Windows.Forms.DataGridViewTriState.True;
+            this.Column1.Width = 160;
             // 
             // Edit
             // 

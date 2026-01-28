@@ -20,12 +20,58 @@ namespace TESTS
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
 
+            // 🔑 КЛЮЧЕВОЙ ДЛЯ COMBOBOX В GRID
+            dataGridView1.EditMode = DataGridViewEditMode.EditOnEnter;
+            dataGridView1.SelectionMode = DataGridViewSelectionMode.CellSelect;
+            dataGridView1.MultiSelect = false;
+            dataGridView1.AllowUserToAddRows = false;
+
             jsonPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "tests.json"
             );
 
+            InitTypeColumn();
             LoadTests();
+        }
+
+        // ================== COMBOBOX КОЛОНКА ==================
+        private void InitTypeColumn()
+        {
+            int index = -1;
+
+            foreach (DataGridViewColumn col in dataGridView1.Columns)
+            {
+                if (col.HeaderText == "Тип вопроса")
+                {
+                    index = col.Index;
+                    break;
+                }
+            }
+
+            if (index == -1)
+                return;
+
+            var comboCol = new DataGridViewComboBoxColumn
+            {
+                Name = "Тип вопроса",
+                HeaderText = "Тип вопроса",
+                FlatStyle = FlatStyle.Flat,
+
+                // ✅ ФИКСИРОВАННАЯ ШИРИНА
+                Width = 140,
+                AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
+
+                DataSource = new[]
+                {
+                    "Один вариант",
+                    "Несколько вариантов",
+                    "Текстовый"
+                }
+            };
+
+            dataGridView1.Columns.RemoveAt(index);
+            dataGridView1.Columns.Insert(index, comboCol);
         }
 
         // ================== ЗАГРУЗКА JSON ==================
@@ -72,10 +118,10 @@ namespace TESTS
             foreach (var q in selectedTest.Questions)
             {
                 dataGridView1.Rows.Add(
-                    q.Text,                                           // Вопрос
-                    q.Options != null ? string.Join("; ", q.Options) : "", // Ответы
-                    q.AnswerHash,                                    // Правильный ответ
-                    GetTypeName(q.Type),                             // Тип вопроса
+                    q.Text,
+                    q.Options != null ? string.Join("; ", q.Options) : "",
+                    q.AnswerHash,
+                    GetTypeName(q.Type),
                     "Изменить",
                     "Удалить"
                 );
@@ -92,17 +138,14 @@ namespace TESTS
                 return;
 
             var columnName = dataGridView1.Columns[e.ColumnIndex].HeaderText;
+            var row = dataGridView1.Rows[e.RowIndex];
+            var question = selectedTest.Questions[e.RowIndex];
 
-            // ===== УДАЛЕНИЕ =====
+            // ===== УДАЛИТЬ =====
             if (columnName == "Удалить")
             {
-                var confirm = MessageBox.Show(
-                    "Удалить вопрос?",
-                    "Подтверждение",
-                    MessageBoxButtons.YesNo
-                );
-
-                if (confirm != DialogResult.Yes)
+                if (MessageBox.Show("Удалить вопрос?", "Подтверждение",
+                    MessageBoxButtons.YesNo) != DialogResult.Yes)
                     return;
 
                 selectedTest.Questions.RemoveAt(e.RowIndex);
@@ -111,12 +154,9 @@ namespace TESTS
                 return;
             }
 
-            // ===== ИЗМЕНЕНИЕ =====
+            // ===== ИЗМЕНИТЬ =====
             if (columnName == "Изменить")
             {
-                var row = dataGridView1.Rows[e.RowIndex];
-                var question = selectedTest.Questions[e.RowIndex];
-
                 question.Text = row.Cells[0].Value?.ToString() ?? "";
 
                 question.Options = row.Cells[1].Value != null
@@ -128,28 +168,13 @@ namespace TESTS
 
                 question.AnswerHash = row.Cells[2].Value?.ToString() ?? "";
 
-                // ===== ТИП ВОПРОСА =====
-                var typeText = row.Cells[3].Value?.ToString();
-
-                switch (typeText)
+                switch (row.Cells[3].Value?.ToString())
                 {
-                    case "Один вариант":
-                        question.Type = 0;
-                        break;
-                    case "Несколько вариантов":
-                        question.Type = 1;
-                        break;
-                    case "Текстовый":
-                        question.Type = 2;
-                        break;
+                    case "Один вариант": question.Type = 0; break;
+                    case "Несколько вариантов": question.Type = 1; break;
+                    case "Текстовый": question.Type = 2; break;
                     default:
-                        MessageBox.Show(
-                            "Некорректный тип вопроса.\n" +
-                            "Допустимые значения:\n" +
-                            "Один вариант\n" +
-                            "Несколько вариантов\n" +
-                            "Текстовый"
-                        );
+                        MessageBox.Show("Выберите тип вопроса");
                         return;
                 }
 
@@ -185,7 +210,7 @@ namespace TESTS
             LoadQuestions();
         }
 
-        // ================== ТИП В ТЕКСТ ==================
+        // ================== TYPE → TEXT ==================
         private string GetTypeName(int type)
         {
             switch (type)
@@ -193,7 +218,7 @@ namespace TESTS
                 case 0: return "Один вариант";
                 case 1: return "Несколько вариантов";
                 case 2: return "Текстовый";
-                default: return "Неизвестно";
+                default: return "Текстовый";
             }
         }
     }
