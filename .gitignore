@@ -1,3 +1,14 @@
-.vs
-bin/
-obj/
+# Visual Studio / .NET Core
+**/bin/
+**/obj/
+**/.vs/
+**/*.user
+**/*.suo
+**/*.userosscache
+
+# NuGet
+**/*.nupkg
+**/packages/
+
+# Logs
+**/[Ll]ogs/
