@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 
@@ -10,7 +13,11 @@ namespace TESTS
     {
         private List<TestModel> tests;
         private TestModel selectedTest;
-        private string jsonPath;
+        private string encPath;
+
+        // 32-byte key for AES-256 — замените на свой секрет (ровно 32 символа в UTF8)
+        private static readonly byte[] CryptoKey =
+            Encoding.UTF8.GetBytes("32_bytes_secret_key_123456789012");
 
         public admin_panel()
         {
@@ -26,14 +33,73 @@ namespace TESTS
             dataGridView1.MultiSelect = false;
             dataGridView1.AllowUserToAddRows = false;
 
-            jsonPath = Path.Combine(
+            encPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
-                "tests.json"
+                "tests.enc"
             );
 
             InitTypeColumn();
             LoadTests();
+
+            // Если у тебя есть старый tests.json и нужно один раз замигрировать -> раскомментируй вызов,
+            // запусти программу один раз, затем закомментируй/удали этот вызов.
+            //MigrateJsonToEnc();
+
+            // Обратная миграция для отладки (создаст tests_debug.json) -> раскомментируй вызов,
+            // запусти программу один раз, затем закомментируй / удали этот вызов.
+            //DebugDecryptEncToJson();
+
         }
+
+        // ================== MIGRATION (одноразово) ==================
+        // Если у тебя есть tests.json (в открытом виде) — этот метод создаст tests.enc
+        private void MigrateJsonToEnc()
+        {
+            var jsonPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "tests.json"
+            );
+
+            if (!File.Exists(jsonPath))
+            {
+                MessageBox.Show("tests.json не найден");
+                return;
+            }
+
+            if (File.Exists(encPath))
+            {
+                MessageBox.Show("tests.enc уже существует");
+                return;
+            }
+
+            var json = File.ReadAllText(jsonPath);
+            var encrypted = Encrypt(json);
+            File.WriteAllText(encPath, encrypted);
+
+            MessageBox.Show("Миграция завершена. tests.enc создан.");
+        }
+
+        private void DebugDecryptEncToJson()
+        {
+            if (!File.Exists(encPath))
+            {
+                MessageBox.Show("tests.enc не найден");
+                return;
+            }
+
+            var encrypted = File.ReadAllText(encPath);
+            var json = Decrypt(encrypted);
+
+            var debugPath = Path.Combine(
+                AppDomain.CurrentDomain.BaseDirectory,
+                "tests_debug.json"
+            );
+
+            File.WriteAllText(debugPath, json, Encoding.UTF8);
+
+            MessageBox.Show("tests_debug.json создан для проверки");
+        }
+
 
         // ================== COMBOBOX КОЛОНКА ==================
         private void InitTypeColumn()
@@ -74,19 +140,23 @@ namespace TESTS
             dataGridView1.Columns.Insert(index, comboCol);
         }
 
-        // ================== ЗАГРУЗКА JSON ==================
+        // ================== ЗАГРУЗКА (расшифровка в памяти) ==================
         private void LoadTests()
         {
-            if (!File.Exists(jsonPath))
+            if (!File.Exists(encPath))
             {
-                MessageBox.Show("Файл tests.json не найден");
+                // если нет зашифрованного файла — создаём пустой список
+                tests = new List<TestModel>();
+                comboBox1.DisplayMember = "Title";
+                comboBox1.DataSource = tests;
                 return;
             }
 
             try
             {
-                var json = File.ReadAllText(jsonPath);
-                tests = JsonConvert.DeserializeObject<List<TestModel>>(json);
+                var encrypted = File.ReadAllText(encPath);
+                var json = Decrypt(encrypted);
+                tests = JsonConvert.DeserializeObject<List<TestModel>>(json) ?? new List<TestModel>();
 
                 comboBox1.DisplayMember = "Title";
                 comboBox1.DataSource = tests;
@@ -96,7 +166,10 @@ namespace TESTS
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка загрузки tests.json\n" + ex.Message);
+                MessageBox.Show("Ошибка загрузки tests.enc\n" + ex.Message);
+                tests = new List<TestModel>();
+                comboBox1.DisplayMember = "Title";
+                comboBox1.DataSource = tests;
             }
         }
 
@@ -163,6 +236,7 @@ namespace TESTS
                     ? new List<string>(
                         row.Cells[1].Value.ToString()
                             .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                            .Select(x => x.Trim())
                     )
                     : new List<string>();
 
@@ -183,11 +257,12 @@ namespace TESTS
             }
         }
 
-        // ================== СОХРАНЕНИЕ JSON ==================
+        // ================== СОХРАНЕНИЕ (шифруем и пишем tests.enc) ==================
         private void SaveJson()
         {
             var json = JsonConvert.SerializeObject(tests, Formatting.Indented);
-            File.WriteAllText(jsonPath, json);
+            var encrypted = Encrypt(json);
+            File.WriteAllText(encPath, encrypted);
         }
 
         // ================== ДОБАВИТЬ ВОПРОС ==================
@@ -219,6 +294,52 @@ namespace TESTS
                 case 1: return "Несколько вариантов";
                 case 2: return "Текстовый";
                 default: return "Текстовый";
+            }
+        }
+
+        // ================== КРИПТОФУНКЦИИ (C# 7.3 совместимо) ==================
+        private static string Encrypt(string plainText)
+        {
+            using (var aes = Aes.Create())
+            {
+                aes.Key = CryptoKey;
+                aes.GenerateIV();
+
+                using (var encryptor = aes.CreateEncryptor())
+                {
+                    var bytes = Encoding.UTF8.GetBytes(plainText);
+                    var cipher = encryptor.TransformFinalBlock(bytes, 0, bytes.Length);
+
+                    var result = new byte[aes.IV.Length + cipher.Length];
+                    Buffer.BlockCopy(aes.IV, 0, result, 0, aes.IV.Length);
+                    Buffer.BlockCopy(cipher, 0, result, aes.IV.Length, cipher.Length);
+
+                    return Convert.ToBase64String(result);
+                }
+            }
+        }
+
+        private static string Decrypt(string encryptedText)
+        {
+            var full = Convert.FromBase64String(encryptedText);
+
+            using (var aes = Aes.Create())
+            {
+                aes.Key = CryptoKey;
+
+                var iv = new byte[16];
+                var cipher = new byte[full.Length - 16];
+
+                Buffer.BlockCopy(full, 0, iv, 0, 16);
+                Buffer.BlockCopy(full, 16, cipher, 0, cipher.Length);
+
+                aes.IV = iv;
+
+                using (var decryptor = aes.CreateDecryptor())
+                {
+                    var plain = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+                    return Encoding.UTF8.GetString(plain);
+                }
             }
         }
     }
