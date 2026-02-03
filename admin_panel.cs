@@ -342,6 +342,49 @@ namespace TESTS
                 }
             }
         }
+
+        
+        private void button2_Click(object sender, EventArgs e)
+        {
+            using (var form = new TestAdd())
+            {
+                if (form.ShowDialog(this) == DialogResult.OK)
+                {
+                    tests.Add(form.CreatedTest);
+                    SaveJson();
+                    LoadTests();
+
+                    comboBox1.SelectedItem = form.CreatedTest;
+                }
+            }
+        }
+
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (selectedTest == null)
+            {
+                MessageBox.Show("Тест не выбран");
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Удалить тест \"{selectedTest.Title}\"?",
+                "Подтверждение удаления",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result != DialogResult.Yes)
+                return;
+
+            tests.Remove(selectedTest);
+
+            SaveJson();
+            LoadTests();
+
+            selectedTest = null;
+            dataGridView1.Rows.Clear();
+        }
     }
 
     // ================== МОДЕЛИ ==================
