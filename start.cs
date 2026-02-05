@@ -113,7 +113,7 @@ namespace TESTS
 
         private void button1_Click(object sender, EventArgs e)
         {
-            var selectedTest = comboBoxTests.SelectedItem as Test;
+            var selectedTest = comboBoxTests.SelectedItem as Test;  
             if (selectedTest == null)
             {
                 MessageBox.Show("Выберите тест");

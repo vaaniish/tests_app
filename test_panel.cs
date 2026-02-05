@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -7,17 +8,40 @@ namespace TESTS
 {
     public partial class test_panel : Form
     {
-        private Test test;
-        private int currentQuestionIndex = 0;
-        private int correctAnswers = 0;
-        private int totalQuestions;
+        private readonly Test test;
+        private readonly List<Question> questions;
+        private readonly Dictionary<int, object> userAnswers = new Dictionary<int, object>();
+
+        private int currentIndex = 0;
+
+        // ===== TIMER =====
+        private Timer testTimer;
+        private TimeSpan remainingTime;
 
         public test_panel(Test test)
         {
             InitializeComponent();
             StartPosition = FormStartPosition.CenterScreen;
-            this.test = test;
-            totalQuestions = test.Questions.Count;
+
+            this.test = test ?? throw new ArgumentNullException(nameof(test));
+
+            var rnd = new Random();
+
+            questions = (test.Questions ?? new List<Question>())
+                .OrderBy(q => rnd.Next())
+                .Take(10)
+                .ToList();
+
+            // ===== INIT TIMER =====
+            remainingTime = TimeSpan.FromMinutes(10);
+
+            testTimer = new Timer();
+            testTimer.Interval = 1000;
+            testTimer.Tick += TestTimer_Tick;
+            testTimer.Start();
+
+            UpdateTimerLabel();
+            UpdateQuestionNumber();
         }
 
         private void test_panel_Load(object sender, EventArgs e)
@@ -25,18 +49,21 @@ namespace TESTS
             ShowQuestion();
         }
 
-        // ================== UI ==================
+        // ================= UI =================
+
         private void ShowQuestion()
         {
             pnlContent.Controls.Clear();
 
-            if (currentQuestionIndex >= test.Questions.Count)
+            if (currentIndex >= questions.Count)
             {
                 ShowResult();
                 return;
             }
 
-            var q = test.Questions[currentQuestionIndex];
+            UpdateQuestionNumber();
+
+            var q = questions[currentIndex];
 
             pnlContent.Controls.Add(new Label
             {
@@ -50,20 +77,22 @@ namespace TESTS
             switch (q.Type)
             {
                 case QuestionType.Single:
-                    RenderSingleChoice(q);
+                    RenderSingle(q);
                     break;
 
                 case QuestionType.Multiple:
-                    RenderMultipleChoice(q);
+                    RenderMultiple(q);
                     break;
 
                 case QuestionType.Text:
-                    RenderTextInput();
+                    RenderText();
                     break;
             }
+
+            RestoreAnswer();
         }
 
-        private void RenderSingleChoice(Question q)
+        private void RenderSingle(Question q)
         {
             foreach (var option in q.Options)
             {
@@ -77,7 +106,7 @@ namespace TESTS
             }
         }
 
-        private void RenderMultipleChoice(Question q)
+        private void RenderMultiple(Question q)
         {
             foreach (var option in q.Options)
             {
@@ -91,7 +120,7 @@ namespace TESTS
             }
         }
 
-        private void RenderTextInput()
+        private void RenderText()
         {
             pnlContent.Controls.Add(new TextBox
             {
@@ -101,83 +130,171 @@ namespace TESTS
             });
         }
 
-        // ================== CHECK ==================
-        private void CheckAnswer()
+        // ================= ANSWERS =================
+
+        private void SaveAnswer()
         {
-            var q = test.Questions[currentQuestionIndex];
+            var q = questions[currentIndex];
 
             switch (q.Type)
             {
                 case QuestionType.Single:
-                    CheckSingleChoice(q);
+                    userAnswers[currentIndex] = pnlContent.Controls
+                        .OfType<RadioButton>()
+                        .FirstOrDefault(r => r.Checked)?.Text;
                     break;
 
                 case QuestionType.Multiple:
-                    CheckMultipleChoice(q);
+                    userAnswers[currentIndex] = pnlContent.Controls
+                        .OfType<CheckBox>()
+                        .Where(c => c.Checked)
+                        .Select(c => c.Text)
+                        .ToList();
                     break;
 
                 case QuestionType.Text:
-                    CheckTextAnswer(q);
+                    userAnswers[currentIndex] = pnlContent.Controls
+                        .OfType<TextBox>()
+                        .FirstOrDefault()?.Text;
                     break;
             }
         }
 
-        private void CheckSingleChoice(Question q)
+        private void RestoreAnswer()
         {
-            var selected = pnlContent.Controls
-                .OfType<RadioButton>()
-                .FirstOrDefault(r => r.Checked);
-
-            if (selected == null)
+            if (!userAnswers.ContainsKey(currentIndex))
                 return;
 
-            if (Normalize(selected.Text) == Normalize(q.Answer))
-                correctAnswers++;
+            var q = questions[currentIndex];
+            var answer = userAnswers[currentIndex];
+
+            switch (q.Type)
+            {
+                case QuestionType.Single:
+                    foreach (var rb in pnlContent.Controls.OfType<RadioButton>())
+                        rb.Checked = rb.Text == (string)answer;
+                    break;
+
+                case QuestionType.Multiple:
+                    var list = answer as List<string> ?? new List<string>();
+                    foreach (var cb in pnlContent.Controls.OfType<CheckBox>())
+                        cb.Checked = list.Contains(cb.Text);
+                    break;
+
+                case QuestionType.Text:
+                    var tb = pnlContent.Controls.OfType<TextBox>().FirstOrDefault();
+                    if (tb != null)
+                        tb.Text = answer as string ?? string.Empty;
+                    break;
+            }
         }
 
-        private void CheckMultipleChoice(Question q)
-        {
-            var selected = pnlContent.Controls
-                .OfType<CheckBox>()
-                .Where(c => c.Checked)
-                .Select(c => Normalize(c.Text))
-                .OrderBy(x => x)
-                .ToList();
+        // ================= NAVIGATION =================
 
-            if (selected.Count == 0)
+        private void btnNext_Click_Click(object sender, EventArgs e)
+        {
+            SaveAnswer();
+            currentIndex++;
+            ShowQuestion();
+        }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            if (currentIndex <= 0)
                 return;
 
-            var correct = q.Answer
-                .Split(';')
-                .Select(x => Normalize(x))
-                .OrderBy(x => x)
-                .ToList();
-
-            if (selected.SequenceEqual(correct))
-                correctAnswers++;
+            SaveAnswer();
+            currentIndex--;
+            ShowQuestion();
         }
 
-        private void CheckTextAnswer(Question q)
+        // ================= TIMER =================
+
+        private void TestTimer_Tick(object sender, EventArgs e)
         {
-            var tb = pnlContent.Controls
-                .OfType<TextBox>()
-                .FirstOrDefault();
+            remainingTime = remainingTime.Subtract(TimeSpan.FromSeconds(1));
 
-            if (tb == null)
+            if (remainingTime <= TimeSpan.Zero)
+            {
+                remainingTime = TimeSpan.Zero;
+                UpdateTimerLabel();
+                testTimer.Stop();
+                ShowResult();
                 return;
+            }
 
-            if (Normalize(tb.Text) == Normalize(q.Answer))
-                correctAnswers++;
+            UpdateTimerLabel();
         }
 
-        // ================== RESULT ==================
+        private void UpdateTimerLabel()
+        {
+            labelTimer.Text = string.Format(
+                "{0:D2}:{1:D2}",
+                remainingTime.Minutes,
+                remainingTime.Seconds
+            );
+        }
+
+        // ================= QUESTION NUMBER =================
+
+        private void UpdateQuestionNumber()
+        {
+            labelQNum.Text = string.Format(
+                "Вопрос {0} из {1}",
+                currentIndex + 1,
+                questions.Count
+            );
+        }
+
+        private void labelTimer_Click(object sender, EventArgs e)
+        {
+            // ничего не нужно
+        }
+
+        // ================= RESULT =================
+
         private void ShowResult()
         {
-            double percent = (double)correctAnswers / totalQuestions * 100;
+            testTimer.Stop();
+
+            int correct = 0;
+
+            for (int i = 0; i < questions.Count; i++)
+            {
+                if (!userAnswers.ContainsKey(i))
+                    continue;
+
+                var q = questions[i];
+                var ua = userAnswers[i];
+
+                switch (q.Type)
+                {
+                    case QuestionType.Single:
+                        if (Normalize((string)ua) == Normalize(q.Answer))
+                            correct++;
+                        break;
+
+                    case QuestionType.Multiple:
+                        var user = ((List<string>)ua).Select(Normalize).OrderBy(x => x);
+                        var right = q.Answer.Split(';').Select(Normalize).OrderBy(x => x);
+                        if (user.SequenceEqual(right))
+                            correct++;
+                        break;
+
+                    case QuestionType.Text:
+                        if (Normalize((string)ua) == Normalize(q.Answer))
+                            correct++;
+                        break;
+                }
+            }
+
+            double percent = questions.Count == 0
+                ? 0
+                : (double)correct / questions.Count * 100;
 
             MessageBox.Show(
                 $"Тест завершён!\n\n" +
-                $"Правильных ответов: {correctAnswers} из {totalQuestions}\n" +
+                $"Правильных ответов: {correct} из {questions.Count}\n" +
                 $"Результат: {percent:0}%",
                 "Результат теста",
                 MessageBoxButtons.OK,
@@ -188,17 +305,11 @@ namespace TESTS
             Close();
         }
 
-        private void btnNext_Click_Click(object sender, EventArgs e)
-        {
-            CheckAnswer();
-            currentQuestionIndex++;
-            ShowQuestion();
-        }
+        // ================= UTILS =================
 
-        // ================== UTILS ==================
         private string Normalize(string s)
         {
-            return s?.Trim().ToLowerInvariant();
+            return s?.Trim().ToLowerInvariant() ?? string.Empty;
         }
     }
 }
