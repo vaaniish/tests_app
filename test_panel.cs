@@ -12,11 +12,10 @@ namespace TESTS
         private int correctAnswers = 0;
         private int totalQuestions;
 
-
         public test_panel(Test test)
         {
             InitializeComponent();
-            this.StartPosition = FormStartPosition.CenterScreen;
+            StartPosition = FormStartPosition.CenterScreen;
             this.test = test;
             totalQuestions = test.Questions.Count;
         }
@@ -26,32 +25,28 @@ namespace TESTS
             ShowQuestion();
         }
 
+        // ================== UI ==================
         private void ShowQuestion()
         {
             pnlContent.Controls.Clear();
 
             if (currentQuestionIndex >= test.Questions.Count)
             {
-                MessageBox.Show("Тест завершён");
-                Close();
+                ShowResult();
                 return;
             }
 
             var q = test.Questions[currentQuestionIndex];
 
-            // ВОПРОС
-            var lbl = new Label
+            pnlContent.Controls.Add(new Label
             {
                 Text = q.Text,
                 AutoSize = true,
                 MaximumSize = new Size(pnlContent.Width - 40, 0),
                 Font = new Font("Segoe UI", 14, FontStyle.Bold),
                 Margin = new Padding(5, 5, 5, 15)
-            };
+            });
 
-            pnlContent.Controls.Add(lbl);
-
-            // ОТВЕТЫ
             switch (q.Type)
             {
                 case QuestionType.Single:
@@ -68,49 +63,45 @@ namespace TESTS
             }
         }
 
-
         private void RenderSingleChoice(Question q)
         {
             foreach (var option in q.Options)
             {
-                var rb = new RadioButton
+                pnlContent.Controls.Add(new RadioButton
                 {
                     Text = option,
                     AutoSize = true,
                     Font = new Font("Segoe UI", 12),
                     Margin = new Padding(10)
-                };
-                pnlContent.Controls.Add(rb);
+                });
             }
         }
-
 
         private void RenderMultipleChoice(Question q)
         {
             foreach (var option in q.Options)
             {
-                var cb = new CheckBox
+                pnlContent.Controls.Add(new CheckBox
                 {
                     Text = option,
                     AutoSize = true,
                     Font = new Font("Segoe UI", 12),
                     Margin = new Padding(10)
-                };
-                pnlContent.Controls.Add(cb);
+                });
             }
         }
 
         private void RenderTextInput()
         {
-            var tb = new TextBox
+            pnlContent.Controls.Add(new TextBox
             {
                 Width = pnlContent.Width - 40,
                 Font = new Font("Segoe UI", 12),
                 Margin = new Padding(10)
-            };
-            pnlContent.Controls.Add(tb);
+            });
         }
 
+        // ================== CHECK ==================
         private void CheckAnswer()
         {
             var q = test.Questions[currentQuestionIndex];
@@ -118,44 +109,68 @@ namespace TESTS
             switch (q.Type)
             {
                 case QuestionType.Single:
-                    CheckSingleChoice();
+                    CheckSingleChoice(q);
                     break;
 
                 case QuestionType.Multiple:
-                    CheckMultipleChoice();
+                    CheckMultipleChoice(q);
                     break;
 
                 case QuestionType.Text:
-                    CheckTextAnswer();
+                    CheckTextAnswer(q);
                     break;
             }
         }
-        private void CheckSingleChoice()
-        {
-            var radios = pnlContent.Controls.OfType<RadioButton>().ToList();
-            if (radios.Count == 0) return;
 
-            // ВРЕМЕННО: считаем правильным последний вариант
-            if (radios.Last().Checked)
+        private void CheckSingleChoice(Question q)
+        {
+            var selected = pnlContent.Controls
+                .OfType<RadioButton>()
+                .FirstOrDefault(r => r.Checked);
+
+            if (selected == null)
+                return;
+
+            if (Normalize(selected.Text) == Normalize(q.Answer))
                 correctAnswers++;
         }
-        private void CheckMultipleChoice()
-        {
-            var checks = pnlContent.Controls.OfType<CheckBox>().ToList();
-            if (checks.Count == 0) return;
 
-            // ВРЕМЕННО: если отмечен хотя бы один вариант
-            if (checks.Any(c => c.Checked))
+        private void CheckMultipleChoice(Question q)
+        {
+            var selected = pnlContent.Controls
+                .OfType<CheckBox>()
+                .Where(c => c.Checked)
+                .Select(c => Normalize(c.Text))
+                .OrderBy(x => x)
+                .ToList();
+
+            if (selected.Count == 0)
+                return;
+
+            var correct = q.Answer
+                .Split(';')
+                .Select(x => Normalize(x))
+                .OrderBy(x => x)
+                .ToList();
+
+            if (selected.SequenceEqual(correct))
                 correctAnswers++;
         }
-        private void CheckTextAnswer()
-        {
-            var tb = pnlContent.Controls.OfType<TextBox>().FirstOrDefault();
-            if (tb == null) return;
 
-            if (!string.IsNullOrWhiteSpace(tb.Text))
+        private void CheckTextAnswer(Question q)
+        {
+            var tb = pnlContent.Controls
+                .OfType<TextBox>()
+                .FirstOrDefault();
+
+            if (tb == null)
+                return;
+
+            if (Normalize(tb.Text) == Normalize(q.Answer))
                 correctAnswers++;
         }
+
+        // ================== RESULT ==================
         private void ShowResult()
         {
             double percent = (double)correctAnswers / totalQuestions * 100;
@@ -169,29 +184,21 @@ namespace TESTS
                 MessageBoxIcon.Information
             );
 
-            this.DialogResult = DialogResult.OK;
-            this.Close();
+            DialogResult = DialogResult.OK;
+            Close();
         }
-
 
         private void btnNext_Click_Click(object sender, EventArgs e)
         {
-            // Здесь позже будет проверка ответа
             CheckAnswer();
-
             currentQuestionIndex++;
-
-            if (currentQuestionIndex >= totalQuestions)
-            {
-                ShowResult();
-                return;
-            }
-
             ShowQuestion();
+        }
+
+        // ================== UTILS ==================
+        private string Normalize(string s)
+        {
+            return s?.Trim().ToLowerInvariant();
         }
     }
 }
-
-
-
-

@@ -93,7 +93,7 @@
             this.Controls.Add(this.richTextBox1);
             this.Name = "start";
             this.Text = "Главное меню";
-            this.Load += new System.EventHandler(this.start_Load_1);
+
             this.ResumeLayout(false);
 
         }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Security.Cryptography;
+using System.Text;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 
@@ -9,16 +11,20 @@ namespace TESTS
     public partial class start : Form
     {
         private List<Test> tests = new List<Test>();
-        private string testsPath;
+        private string encPath;
+
+        // Ключ ДОЛЖЕН совпадать с admin_panel
+        private static readonly byte[] CryptoKey =
+            Encoding.UTF8.GetBytes("32_bytes_secret_key_123456789012");
 
         public start()
         {
             InitializeComponent();
             this.StartPosition = FormStartPosition.CenterScreen;
 
-            testsPath = Path.Combine(
+            encPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
-                "tests.json"
+                "tests.enc"
             );
 
             Load += Start_Load;
@@ -30,26 +36,55 @@ namespace TESTS
             BindComboBox();
         }
 
+        // ===== ЗАГРУЗКА ТЕСТОВ (ТОЛЬКО ENC) =====
         private void LoadTests()
         {
-            if (!File.Exists(testsPath))
+            if (!File.Exists(encPath))
             {
-                MessageBox.Show("Файл tests.json не найден");
+                MessageBox.Show("Файл tests.enc не найден");
                 return;
             }
 
             try
             {
-                var json = File.ReadAllText(testsPath);
+                var encrypted = File.ReadAllText(encPath);
+                var json = Decrypt(encrypted);
+
                 tests = JsonConvert.DeserializeObject<List<Test>>(json)
                         ?? new List<Test>();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибка чтения tests.json:\n" + ex.Message);
+                MessageBox.Show("Ошибка загрузки тестов:\n" + ex.Message);
             }
         }
 
+        // ===== AES DECRYPT =====
+        private static string Decrypt(string encryptedText)
+        {
+            var full = Convert.FromBase64String(encryptedText);
+
+            using (var aes = Aes.Create())
+            {
+                aes.Key = CryptoKey;
+
+                var iv = new byte[16];
+                var cipher = new byte[full.Length - 16];
+
+                Buffer.BlockCopy(full, 0, iv, 0, 16);
+                Buffer.BlockCopy(full, 16, cipher, 0, cipher.Length);
+
+                aes.IV = iv;
+
+                using (var decryptor = aes.CreateDecryptor())
+                {
+                    var plain = decryptor.TransformFinalBlock(cipher, 0, cipher.Length);
+                    return Encoding.UTF8.GetString(plain);
+                }
+            }
+        }
+
+        // ===== UI =====
         private void BindComboBox()
         {
             comboBoxTests.DataSource = null;
@@ -88,7 +123,7 @@ namespace TESTS
             using (var testForm = new test_panel(selectedTest))
             {
                 this.Hide();
-                testForm.ShowDialog(this); // ВАЖНО: owner
+                testForm.ShowDialog(this);
                 this.Show();
             }
         }
@@ -98,14 +133,9 @@ namespace TESTS
             using (var adminForm = new admin_login())
             {
                 this.Hide();
-                adminForm.ShowDialog(this); // модальное окно
+                adminForm.ShowDialog(this);
                 this.Show();
             }
-        }
-
-        private void start_Load_1(object sender, EventArgs e)
-        {
-
         }
     }
 }

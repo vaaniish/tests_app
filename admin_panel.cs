@@ -15,7 +15,7 @@ namespace TESTS
         private TestModel selectedTest;
         private string encPath;
 
-        // 32-byte key for AES-256 — замените на свой секрет (ровно 32 символа в UTF8)
+        // 32-byte key for AES-256
         private static readonly byte[] CryptoKey =
             Encoding.UTF8.GetBytes("32_bytes_secret_key_123456789012");
 
@@ -27,7 +27,6 @@ namespace TESTS
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
 
-            // 🔑 КЛЮЧЕВОЙ ДЛЯ COMBOBOX В GRID
             dataGridView1.EditMode = DataGridViewEditMode.EditOnEnter;
             dataGridView1.SelectionMode = DataGridViewSelectionMode.CellSelect;
             dataGridView1.MultiSelect = false;
@@ -37,75 +36,17 @@ namespace TESTS
                 AppDomain.CurrentDomain.BaseDirectory,
                 "tests.enc"
             );
-
+            MigrateJsonToEnc();
+            //DebugDecryptEncToJson()
             InitTypeColumn();
             LoadTests();
-
-            // Если у тебя есть старый tests.json и нужно один раз замигрировать -> раскомментируй вызов,
-            // запусти программу один раз, затем закомментируй/удали этот вызов.
-            //MigrateJsonToEnc();
-
-            // Обратная миграция для отладки (создаст tests_debug.json) -> раскомментируй вызов,
-            // запусти программу один раз, затем закомментируй / удали этот вызов.
-            //DebugDecryptEncToJson();
-
         }
 
-        // ================== MIGRATION (одноразово) ==================
-        // Если у тебя есть tests.json (в открытом виде) — этот метод создаст tests.enc
-        private void MigrateJsonToEnc()
-        {
-            var jsonPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "tests.json"
-            );
-
-            if (!File.Exists(jsonPath))
-            {
-                MessageBox.Show("tests.json не найден");
-                return;
-            }
-
-            if (File.Exists(encPath))
-            {
-                MessageBox.Show("tests.enc уже существует");
-                return;
-            }
-
-            var json = File.ReadAllText(jsonPath);
-            var encrypted = Encrypt(json);
-            File.WriteAllText(encPath, encrypted);
-
-            MessageBox.Show("Миграция завершена. tests.enc создан.");
-        }
-
-        private void DebugDecryptEncToJson()
-        {
-            if (!File.Exists(encPath))
-            {
-                MessageBox.Show("tests.enc не найден");
-                return;
-            }
-
-            var encrypted = File.ReadAllText(encPath);
-            var json = Decrypt(encrypted);
-
-            var debugPath = Path.Combine(
-                AppDomain.CurrentDomain.BaseDirectory,
-                "tests_debug.json"
-            );
-
-            File.WriteAllText(debugPath, json, Encoding.UTF8);
-
-            MessageBox.Show("tests_debug.json создан для проверки");
-        }
-
-
-        // ================== COMBOBOX КОЛОНКА ==================
+        // ================== INIT TYPE COLUMN ==================
         private void InitTypeColumn()
         {
+            // Если колонка "Тип вопроса" уже существует в дизайнере — заменим её на ComboBoxColumn
             int index = -1;
-
             foreach (DataGridViewColumn col in dataGridView1.Columns)
             {
                 if (col.HeaderText == "Тип вопроса")
@@ -123,11 +64,8 @@ namespace TESTS
                 Name = "Тип вопроса",
                 HeaderText = "Тип вопроса",
                 FlatStyle = FlatStyle.Flat,
-
-                // ✅ ФИКСИРОВАННАЯ ШИРИНА
                 Width = 140,
                 AutoSizeMode = DataGridViewAutoSizeColumnMode.None,
-
                 DataSource = new[]
                 {
                     "Один вариант",
@@ -140,12 +78,11 @@ namespace TESTS
             dataGridView1.Columns.Insert(index, comboCol);
         }
 
-        // ================== ЗАГРУЗКА (расшифровка в памяти) ==================
+        // ================== LOAD ==================
         private void LoadTests()
         {
             if (!File.Exists(encPath))
             {
-                // если нет зашифрованного файла — создаём пустой список
                 tests = new List<TestModel>();
                 comboBox1.DisplayMember = "Title";
                 comboBox1.DataSource = tests;
@@ -173,19 +110,61 @@ namespace TESTS
             }
         }
 
-        // ================== ВЫБОР ТЕСТА ==================
+        // ================== OPTIONAL MIGRATION / DEBUG ==================
+        // Если нужно сконвертировать tests.json -> tests.enc (однократно)
+        private void MigrateJsonToEnc()
+        {
+            var jsonPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tests.json");
+
+            if (!File.Exists(jsonPath))
+            {
+                MessageBox.Show("tests.json не найден");
+                return;
+            }
+
+            if (File.Exists(encPath))
+            {
+                MessageBox.Show("tests.enc уже существует");
+                return;
+            }
+
+            var json = File.ReadAllText(jsonPath);
+            var encrypted = Encrypt(json);
+            File.WriteAllText(encPath, encrypted);
+            MessageBox.Show("Миграция завершена. tests.enc создан.");
+        }
+
+        // Для отладки: создаёт tests_debug.json расшифрованный из tests.enc
+        private void DebugDecryptEncToJson()
+        {
+            if (!File.Exists(encPath))
+            {
+                MessageBox.Show("tests.enc не найден");
+                return;
+            }
+
+            var encrypted = File.ReadAllText(encPath);
+            var json = Decrypt(encrypted);
+
+            var debugPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tests_debug.json");
+            File.WriteAllText(debugPath, json, Encoding.UTF8);
+
+            MessageBox.Show("tests_debug.json создан для проверки");
+        }
+
+        // ================== COMBO ==================
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectedTest = comboBox1.SelectedItem as TestModel;
             LoadQuestions();
         }
 
-        // ================== ЗАПОЛНЕНИЕ GRID ==================
+        // ================== GRID ==================
         private void LoadQuestions()
         {
             dataGridView1.Rows.Clear();
 
-            if (selectedTest == null || selectedTest.Questions == null)
+            if (selectedTest?.Questions == null)
                 return;
 
             foreach (var q in selectedTest.Questions)
@@ -193,7 +172,7 @@ namespace TESTS
                 dataGridView1.Rows.Add(
                     q.Text,
                     q.Options != null ? string.Join("; ", q.Options) : "",
-                    q.AnswerHash,
+                    q.Answer,
                     GetTypeName(q.Type),
                     "Изменить",
                     "Удалить"
@@ -201,24 +180,19 @@ namespace TESTS
             }
         }
 
-        // ================== КЛИКИ В GRID ==================
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (selectedTest == null)
-                return;
-
-            if (e.RowIndex < 0 || e.RowIndex >= selectedTest.Questions.Count)
+            if (selectedTest == null || e.RowIndex < 0)
                 return;
 
             var columnName = dataGridView1.Columns[e.ColumnIndex].HeaderText;
             var row = dataGridView1.Rows[e.RowIndex];
             var question = selectedTest.Questions[e.RowIndex];
 
-            // ===== УДАЛИТЬ =====
+            // Удалить вопрос
             if (columnName == "Удалить")
             {
-                if (MessageBox.Show("Удалить вопрос?", "Подтверждение",
-                    MessageBoxButtons.YesNo) != DialogResult.Yes)
+                if (MessageBox.Show("Удалить вопрос?", "Подтверждение", MessageBoxButtons.YesNo) != DialogResult.Yes)
                     return;
 
                 selectedTest.Questions.RemoveAt(e.RowIndex);
@@ -227,20 +201,19 @@ namespace TESTS
                 return;
             }
 
-            // ===== ИЗМЕНИТЬ =====
+            // Изменить вопрос (сохранить изменения из грида в модель)
             if (columnName == "Изменить")
             {
                 question.Text = row.Cells[0].Value?.ToString() ?? "";
 
                 question.Options = row.Cells[1].Value != null
-                    ? new List<string>(
-                        row.Cells[1].Value.ToString()
-                            .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
-                            .Select(x => x.Trim())
-                    )
+                    ? row.Cells[1].Value.ToString()
+                        .Split(new[] { ';' }, StringSplitOptions.RemoveEmptyEntries)
+                        .Select(x => x.Trim())
+                        .ToList()
                     : new List<string>();
 
-                question.AnswerHash = row.Cells[2].Value?.ToString() ?? "";
+                question.Answer = row.Cells[2].Value?.ToString() ?? "";
 
                 switch (row.Cells[3].Value?.ToString())
                 {
@@ -257,19 +230,18 @@ namespace TESTS
             }
         }
 
-        // ================== СОХРАНЕНИЕ (шифруем и пишем tests.enc) ==================
-        private void SaveJson()
-        {
-            var json = JsonConvert.SerializeObject(tests, Formatting.Indented);
-            var encrypted = Encrypt(json);
-            File.WriteAllText(encPath, encrypted);
-        }
-
-        // ================== ДОБАВИТЬ ВОПРОС ==================
+        // ================== ADD QUESTION ==================
+        // button1 = добавить вопрос в выбранный тест
         private void button1_Click(object sender, EventArgs e)
         {
             if (selectedTest == null)
+            {
+                MessageBox.Show("Тест не выбран");
                 return;
+            }
+
+            if (selectedTest.Questions == null)
+                selectedTest.Questions = new List<QuestionModel>();
 
             selectedTest.Questions.Add(new QuestionModel
             {
@@ -277,15 +249,73 @@ namespace TESTS
                 Text = "Новый вопрос",
                 Type = 2,
                 Options = new List<string>(),
-                AnswerHash = "",
-                Salt = ""
+                Answer = ""
             });
 
             SaveJson();
             LoadQuestions();
         }
 
-        // ================== TYPE → TEXT ==================
+        // ================== ADD TEST ==================
+        // button2 = добавить новый тест (предполагается форма TestAdd, аналог в твоём проекте)
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (var form = new TestAdd())
+                {
+                    if (form.ShowDialog(this) == DialogResult.OK && form.CreatedTest != null)
+                    {
+                        if (tests == null) tests = new List<TestModel>();
+                        tests.Add(form.CreatedTest);
+                        SaveJson();
+                        LoadTests();
+                        comboBox1.SelectedItem = form.CreatedTest;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при добавлении теста:\n" + ex.Message);
+            }
+        }
+
+        // ================== DELETE TEST ==================
+        // button3 = удалить выбранный тест
+        private void button3_Click(object sender, EventArgs e)
+        {
+            if (selectedTest == null)
+            {
+                MessageBox.Show("Тест не выбран");
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Удалить тест \"{selectedTest.Title}\"?",
+                "Подтверждение удаления",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Warning
+            );
+
+            if (result != DialogResult.Yes)
+                return;
+
+            tests.Remove(selectedTest);
+            SaveJson();
+            LoadTests();
+            selectedTest = null;
+            dataGridView1.Rows.Clear();
+        }
+
+        // ================== SAVE ==================
+        private void SaveJson()
+        {
+            var json = JsonConvert.SerializeObject(tests, Formatting.Indented);
+            var encrypted = Encrypt(json);
+            File.WriteAllText(encPath, encrypted);
+        }
+
+        // ================== TYPE ==================
         private string GetTypeName(int type)
         {
             switch (type)
@@ -297,7 +327,7 @@ namespace TESTS
             }
         }
 
-        // ================== КРИПТОФУНКЦИИ (C# 7.3 совместимо) ==================
+        // ================== AES ==================
         private static string Encrypt(string plainText)
         {
             using (var aes = Aes.Create())
@@ -342,52 +372,9 @@ namespace TESTS
                 }
             }
         }
-
-        
-        private void button2_Click(object sender, EventArgs e)
-        {
-            using (var form = new TestAdd())
-            {
-                if (form.ShowDialog(this) == DialogResult.OK)
-                {
-                    tests.Add(form.CreatedTest);
-                    SaveJson();
-                    LoadTests();
-
-                    comboBox1.SelectedItem = form.CreatedTest;
-                }
-            }
-        }
-
-        private void button3_Click(object sender, EventArgs e)
-        {
-            if (selectedTest == null)
-            {
-                MessageBox.Show("Тест не выбран");
-                return;
-            }
-
-            var result = MessageBox.Show(
-                $"Удалить тест \"{selectedTest.Title}\"?",
-                "Подтверждение удаления",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Warning
-            );
-
-            if (result != DialogResult.Yes)
-                return;
-
-            tests.Remove(selectedTest);
-
-            SaveJson();
-            LoadTests();
-
-            selectedTest = null;
-            dataGridView1.Rows.Clear();
-        }
     }
 
-    // ================== МОДЕЛИ ==================
+    // ================== MODELS ==================
     public class TestModel
     {
         public string Id { get; set; }
@@ -403,7 +390,6 @@ namespace TESTS
         public string Text { get; set; }
         public int Type { get; set; }
         public List<string> Options { get; set; }
-        public string AnswerHash { get; set; }
-        public string Salt { get; set; }
+        public string Answer { get; set; }
     }
 }
