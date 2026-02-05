@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
 using System.Windows.Forms;
-using Newtonsoft.Json;
 
 namespace TESTS
 {
@@ -22,7 +23,15 @@ namespace TESTS
         public admin_panel()
         {
             InitializeComponent();
+
+            // === АДАПТАЦИЯ UI ===
+            panelRight.Dock = DockStyle.Right;
+            panelRight.Width = 260;
+            this.AutoScaleMode = AutoScaleMode.Dpi;
+            this.MinimumSize = new Size(900, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
+
+            dataGridView1.Dock = DockStyle.Fill;
 
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
@@ -32,12 +41,13 @@ namespace TESTS
             dataGridView1.MultiSelect = false;
             dataGridView1.AllowUserToAddRows = false;
 
+
             encPath = Path.Combine(
                 AppDomain.CurrentDomain.BaseDirectory,
                 "tests.enc"
             );
             //MigrateJsonToEnc();
-            DebugDecryptEncToJson();
+            //DebugDecryptEncToJson();
             InitTypeColumn();
             LoadTests();
         }
@@ -380,6 +390,11 @@ namespace TESTS
                     return Encoding.UTF8.GetString(plain);
                 }
             }
+        }
+
+        private void panelRight_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 
