@@ -36,8 +36,8 @@ namespace TESTS
                 AppDomain.CurrentDomain.BaseDirectory,
                 "tests.enc"
             );
-            MigrateJsonToEnc();
-            //DebugDecryptEncToJson()
+            //MigrateJsonToEnc();
+            DebugDecryptEncToJson();
             InitTypeColumn();
             LoadTests();
         }
@@ -182,17 +182,22 @@ namespace TESTS
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
         {
-            if (selectedTest == null || e.RowIndex < 0)
+            if (selectedTest == null)
+                return;
+
+            if (e.RowIndex < 0)
+                return;
+
+            if (e.RowIndex >= selectedTest.Questions.Count)
                 return;
 
             var columnName = dataGridView1.Columns[e.ColumnIndex].HeaderText;
-            var row = dataGridView1.Rows[e.RowIndex];
-            var question = selectedTest.Questions[e.RowIndex];
 
-            // Удалить вопрос
+            // ===== УДАЛИТЬ =====
             if (columnName == "Удалить")
             {
-                if (MessageBox.Show("Удалить вопрос?", "Подтверждение", MessageBoxButtons.YesNo) != DialogResult.Yes)
+                if (MessageBox.Show("Удалить вопрос?", "Подтверждение",
+                    MessageBoxButtons.YesNo) != DialogResult.Yes)
                     return;
 
                 selectedTest.Questions.RemoveAt(e.RowIndex);
@@ -201,9 +206,12 @@ namespace TESTS
                 return;
             }
 
-            // Изменить вопрос (сохранить изменения из грида в модель)
+            // ===== ИЗМЕНИТЬ =====
             if (columnName == "Изменить")
             {
+                var row = dataGridView1.Rows[e.RowIndex];
+                var question = selectedTest.Questions[e.RowIndex];
+
                 question.Text = row.Cells[0].Value?.ToString() ?? "";
 
                 question.Options = row.Cells[1].Value != null
@@ -229,6 +237,7 @@ namespace TESTS
                 MessageBox.Show("Изменения сохранены");
             }
         }
+
 
         // ================== ADD QUESTION ==================
         // button1 = добавить вопрос в выбранный тест
