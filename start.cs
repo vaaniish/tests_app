@@ -137,5 +137,24 @@ namespace TESTS
                 this.Show();
             }
         }
+
+        private void richTextBox1_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void comboBoxTests_SelectedIndexChanged_1(object sender, EventArgs e)
+        {
+            var selectedTest = comboBoxTests.SelectedItem as Test;
+
+            if (selectedTest == null)
+            {
+                richTextBox1.Clear();
+                return;
+            }
+
+            // Выводим только описание
+            richTextBox1.Text = selectedTest.Description;
+        }
     }
 }

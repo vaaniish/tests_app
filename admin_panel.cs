@@ -24,15 +24,7 @@ namespace TESTS
         {
             InitializeComponent();
 
-            // === АДАПТАЦИЯ UI ===
-            panelRight.Dock = DockStyle.Right;
-            panelRight.Width = 260;
-            this.AutoScaleMode = AutoScaleMode.Dpi;
-            this.MinimumSize = new Size(900, 600);
             this.StartPosition = FormStartPosition.CenterScreen;
-
-            dataGridView1.Dock = DockStyle.Fill;
-
             comboBox1.SelectedIndexChanged += comboBox1_SelectedIndexChanged;
             dataGridView1.CellContentClick += dataGridView1_CellContentClick;
 

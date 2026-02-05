@@ -32,6 +32,7 @@ namespace TESTS
         private void button1_Click(object sender, EventArgs e)
         {
             var title = richTextBox1.Text.Trim();
+            var description = richTextBox2.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -39,17 +40,29 @@ namespace TESTS
                 return;
             }
 
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                MessageBox.Show("Введите описание теста");
+                return;
+            }
+
             CreatedTest = new TestModel
             {
                 Id = "test-" + Guid.NewGuid().ToString("N").Substring(0, 8),
                 Title = title,
-                Description = "",
+                Description = description, // ← ВАЖНО
                 TimeMinutes = 10,
                 Questions = new List<QuestionModel>()
             };
 
             DialogResult = DialogResult.OK;
             Close();
+
+
+        }
+
+        private void richTextBox2_TextChanged(object sender, EventArgs e)
+        {
 
         }
     }

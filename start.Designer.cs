@@ -44,6 +44,7 @@
             this.richTextBox1.Size = new System.Drawing.Size(665, 476);
             this.richTextBox1.TabIndex = 1;
             this.richTextBox1.Text = "Здесь должно быть описание теста";
+            this.richTextBox1.TextChanged += new System.EventHandler(this.richTextBox1_TextChanged);
             // 
             // button1
             // 
@@ -68,6 +69,7 @@
             this.comboBoxTests.Name = "comboBoxTests";
             this.comboBoxTests.Size = new System.Drawing.Size(438, 30);
             this.comboBoxTests.TabIndex = 3;
+            this.comboBoxTests.SelectedIndexChanged += new System.EventHandler(this.comboBoxTests_SelectedIndexChanged_1);
             // 
             // button2
             // 
@@ -93,7 +95,6 @@
             this.Controls.Add(this.richTextBox1);
             this.Name = "start";
             this.Text = "Главное меню";
-
             this.ResumeLayout(false);
 
         }
