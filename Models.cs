@@ -29,6 +29,10 @@ public class Question
     public QuestionType Type { get; set; }
     public List<string> Options { get; set; }
     public string Answer { get; set; }
+    public string AnswerEncrypted { get; set; }
+    public string FinalSourceKey { get; set; }
+    public string AnswerHash { get; set; }
+    public string AnswerSalt { get; set; }
 
     public Question()
     {

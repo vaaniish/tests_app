@@ -36,6 +36,10 @@
             this.label1 = new System.Windows.Forms.Label();
             this.labelTimer = new System.Windows.Forms.Label();
             this.labelQNum = new System.Windows.Forms.Label();
+            this.buttonFinishEarly = new System.Windows.Forms.Button();
+            this.groupNavigation = new System.Windows.Forms.GroupBox();
+            this.panelNavigation = new System.Windows.Forms.FlowLayoutPanel();
+            this.groupNavigation.SuspendLayout();
             this.SuspendLayout();
             // 
             // btnNext_Click
@@ -110,11 +114,47 @@
             this.labelQNum.TabIndex = 10;
             this.labelQNum.Text = "label2";
             // 
+            // buttonFinishEarly
+            // 
+            this.buttonFinishEarly.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(229)))), ((int)(((byte)(81)))), ((int)(((byte)(81)))));
+            this.buttonFinishEarly.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.buttonFinishEarly.Font = new System.Drawing.Font("Arial Black", 12F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
+            this.buttonFinishEarly.ForeColor = System.Drawing.Color.White;
+            this.buttonFinishEarly.Location = new System.Drawing.Point(18, 518);
+            this.buttonFinishEarly.Name = "buttonFinishEarly";
+            this.buttonFinishEarly.Size = new System.Drawing.Size(218, 45);
+            this.buttonFinishEarly.TabIndex = 11;
+            this.buttonFinishEarly.Text = "Завершить досрочно";
+            this.buttonFinishEarly.UseVisualStyleBackColor = false;
+            this.buttonFinishEarly.Click += new System.EventHandler(this.buttonFinishEarly_Click);
+            // 
+            // groupNavigation
+            // 
+            this.groupNavigation.Controls.Add(this.panelNavigation);
+            this.groupNavigation.Location = new System.Drawing.Point(18, 64);
+            this.groupNavigation.Name = "groupNavigation";
+            this.groupNavigation.Size = new System.Drawing.Size(998, 122);
+            this.groupNavigation.TabIndex = 12;
+            this.groupNavigation.TabStop = false;
+            this.groupNavigation.Text = "Навигация по тесту";
+            // 
+            // panelNavigation
+            // 
+            this.panelNavigation.AutoScroll = true;
+            this.panelNavigation.FlowDirection = System.Windows.Forms.FlowDirection.LeftToRight;
+            this.panelNavigation.Location = new System.Drawing.Point(10, 24);
+            this.panelNavigation.Name = "panelNavigation";
+            this.panelNavigation.Size = new System.Drawing.Size(982, 92);
+            this.panelNavigation.TabIndex = 0;
+            this.panelNavigation.WrapContents = true;
+            // 
             // test_panel
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1028, 707);
+            this.Controls.Add(this.groupNavigation);
+            this.Controls.Add(this.buttonFinishEarly);
             this.Controls.Add(this.labelQNum);
             this.Controls.Add(this.labelTimer);
             this.Controls.Add(this.label1);
@@ -124,6 +164,7 @@
             this.Name = "test_panel";
             this.Text = "test_panel";
             this.Load += new System.EventHandler(this.test_panel_Load);
+            this.groupNavigation.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -137,5 +178,8 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.Label labelTimer;
         private System.Windows.Forms.Label labelQNum;
+        private System.Windows.Forms.Button buttonFinishEarly;
+        private System.Windows.Forms.GroupBox groupNavigation;
+        private System.Windows.Forms.FlowLayoutPanel panelNavigation;
     }
 }

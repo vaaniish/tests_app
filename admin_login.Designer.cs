@@ -54,9 +54,8 @@
             this.tbLogin.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.tbLogin.Font = new System.Drawing.Font("Arial", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.tbLogin.Location = new System.Drawing.Point(31, 67);
-            this.tbLogin.Multiline = true;
             this.tbLogin.Name = "tbLogin";
-            this.tbLogin.Size = new System.Drawing.Size(351, 48);
+            this.tbLogin.Size = new System.Drawing.Size(351, 29);
             this.tbLogin.TabIndex = 1;
             // 
             // label2
@@ -74,9 +73,8 @@
             this.tbPassword.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.tbPassword.Font = new System.Drawing.Font("Arial", 14.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(204)));
             this.tbPassword.Location = new System.Drawing.Point(31, 162);
-            this.tbPassword.Multiline = true;
             this.tbPassword.Name = "tbPassword";
-            this.tbPassword.Size = new System.Drawing.Size(351, 46);
+            this.tbPassword.Size = new System.Drawing.Size(351, 29);
             this.tbPassword.TabIndex = 5;
             this.tbPassword.TextChanged += new System.EventHandler(this.tbPassword_TextChanged);
             // 

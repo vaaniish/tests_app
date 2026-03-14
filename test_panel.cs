@@ -2,38 +2,62 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 
 namespace TESTS
 {
     public partial class test_panel : Form
     {
+        private const int QuestionsPerAttempt = 20;
+
         private readonly Test test;
-        private readonly List<Question> questions;
+        private List<Question> questions = new List<Question>();
         private readonly Dictionary<int, object> userAnswers = new Dictionary<int, object>();
+        private readonly List<Button> questionNavButtons = new List<Button>();
 
-        private int currentIndex = 0;
+        private int currentIndex;
+        private bool resultShown;
+        private bool closingFromResult;
 
-        // ===== TIMER =====
         private Timer testTimer;
         private TimeSpan remainingTime;
+        private float uiScale = 1f;
 
         public test_panel(Test test)
         {
             InitializeComponent();
+            Text = "Прохождение теста";
             StartPosition = FormStartPosition.CenterScreen;
+            MinimumSize = new Size(920, 620);
+            FormBorderStyle = FormBorderStyle.FixedSingle;
+            MinimizeBox = false;
+            MaximizeBox = false;
+            WindowState = FormWindowState.Maximized;
+            Resize += test_panel_Resize;
+            Shown += test_panel_Shown;
+            ApplyAdaptiveTypography();
 
             this.test = test ?? throw new ArgumentNullException(nameof(test));
 
             var rnd = new Random();
+            questions = SelectQuestionsForAttempt(
+                test.Questions ?? new List<Question>(),
+                QuestionsPerAttempt,
+                rnd
+            );
 
-            questions = (test.Questions ?? new List<Question>())
-                .OrderBy(q => rnd.Next())
-                .Take(10)
-                .ToList();
+            if (questions.Count == 0)
+            {
+                MessageBox.Show("В выбранном тесте нет вопросов.");
+                DialogResult = DialogResult.Cancel;
+                Close();
+                return;
+            }
 
-            // ===== INIT TIMER =====
-            remainingTime = TimeSpan.FromMinutes(10);
+            BuildQuestionNavigation();
+
+            remainingTime = TimeSpan.FromMinutes(Math.Max(1, test.TimeMinutes));
 
             testTimer = new Timer();
             testTimer.Interval = 1000;
@@ -42,14 +66,20 @@ namespace TESTS
 
             UpdateTimerLabel();
             UpdateQuestionNumber();
+            UpdateNavigationState();
+            ApplyResponsiveLayout();
+        }
+
+        private void test_panel_Shown(object sender, EventArgs e)
+        {
+            WindowState = FormWindowState.Maximized;
         }
 
         private void test_panel_Load(object sender, EventArgs e)
         {
-            ShowQuestion();
+            if (questions.Count > 0)
+                ShowQuestion();
         }
-
-        // ================= UI =================
 
         private void ShowQuestion()
         {
@@ -61,16 +91,17 @@ namespace TESTS
                 return;
             }
 
-            UpdateQuestionNumber();
-
             var q = questions[currentIndex];
+
+            UpdateQuestionNumber();
+            UpdateNavigationState();
 
             pnlContent.Controls.Add(new Label
             {
                 Text = q.Text,
                 AutoSize = true,
                 MaximumSize = new Size(pnlContent.Width - 40, 0),
-                Font = new Font("Segoe UI", 14, FontStyle.Bold),
+                Font = UiTheme.CreateFont(15f, uiScale, FontStyle.Bold),
                 Margin = new Padding(5, 5, 5, 15)
             });
 
@@ -79,17 +110,16 @@ namespace TESTS
                 case QuestionType.Single:
                     RenderSingle(q);
                     break;
-
                 case QuestionType.Multiple:
                     RenderMultiple(q);
                     break;
-
                 case QuestionType.Text:
                     RenderText();
                     break;
             }
 
             RestoreAnswer();
+            UpdateContentControlWidths();
         }
 
         private void RenderSingle(Question q)
@@ -100,7 +130,7 @@ namespace TESTS
                 {
                     Text = option,
                     AutoSize = true,
-                    Font = new Font("Segoe UI", 12),
+                    Font = UiTheme.CreateFont(13.5f, uiScale, FontStyle.Regular),
                     Margin = new Padding(10)
                 });
             }
@@ -114,7 +144,7 @@ namespace TESTS
                 {
                     Text = option,
                     AutoSize = true,
-                    Font = new Font("Segoe UI", 12),
+                    Font = UiTheme.CreateFont(13.5f, uiScale, FontStyle.Regular),
                     Margin = new Padding(10)
                 });
             }
@@ -125,15 +155,16 @@ namespace TESTS
             pnlContent.Controls.Add(new TextBox
             {
                 Width = pnlContent.Width - 40,
-                Font = new Font("Segoe UI", 12),
+                Font = UiTheme.CreateFont(13.5f, uiScale, FontStyle.Regular),
                 Margin = new Padding(10)
             });
         }
 
-        // ================= ANSWERS =================
-
         private void SaveAnswer()
         {
+            if (currentIndex < 0 || currentIndex >= questions.Count)
+                return;
+
             var q = questions[currentIndex];
 
             switch (q.Type)
@@ -141,7 +172,7 @@ namespace TESTS
                 case QuestionType.Single:
                     userAnswers[currentIndex] = pnlContent.Controls
                         .OfType<RadioButton>()
-                        .FirstOrDefault(r => r.Checked)?.Text;
+                        .FirstOrDefault(r => r.Checked)?.Text ?? string.Empty;
                     break;
 
                 case QuestionType.Multiple:
@@ -155,7 +186,7 @@ namespace TESTS
                 case QuestionType.Text:
                     userAnswers[currentIndex] = pnlContent.Controls
                         .OfType<TextBox>()
-                        .FirstOrDefault()?.Text;
+                        .FirstOrDefault()?.Text ?? string.Empty;
                     break;
             }
         }
@@ -189,8 +220,6 @@ namespace TESTS
             }
         }
 
-        // ================= NAVIGATION =================
-
         private void btnNext_Click_Click(object sender, EventArgs e)
         {
             SaveAnswer();
@@ -208,7 +237,83 @@ namespace TESTS
             ShowQuestion();
         }
 
-        // ================= TIMER =================
+        private void BuildQuestionNavigation()
+        {
+            questionNavButtons.Clear();
+            panelNavigation.Controls.Clear();
+
+            for (var i = 0; i < questions.Count; i++)
+            {
+                var index = i;
+                var button = new Button
+                {
+                    Text = (index + 1).ToString(),
+                    Tag = index,
+                    Width = UiTheme.ScalePx(44, uiScale),
+                    Height = UiTheme.ScalePx(44, uiScale),
+                    Margin = new Padding(0, 0, UiTheme.ScalePx(8, uiScale), UiTheme.ScalePx(8, uiScale))
+                };
+                button.Click += questionNavButton_Click;
+                questionNavButtons.Add(button);
+                panelNavigation.Controls.Add(button);
+            }
+        }
+
+        private void questionNavButton_Click(object sender, EventArgs e)
+        {
+            if (!(sender is Button button) || !(button.Tag is int targetIndex))
+                return;
+
+            if (targetIndex < 0 || targetIndex >= questions.Count || targetIndex == currentIndex)
+                return;
+
+            SaveAnswer();
+            currentIndex = targetIndex;
+            ShowQuestion();
+        }
+
+        private void UpdateNavigationState()
+        {
+            btnBack.Enabled = currentIndex > 0;
+            btnNext_Click.Text = currentIndex >= questions.Count - 1
+                ? "Завершить тест"
+                : "Следующий вопрос";
+            UpdateQuestionNavigationButtonsState();
+        }
+
+        private void UpdateQuestionNavigationButtonsState()
+        {
+            for (var i = 0; i < questionNavButtons.Count; i++)
+            {
+                var button = questionNavButtons[i];
+                var isCurrent = i == currentIndex;
+                var isAnswered = HasAnswerForQuestion(i);
+
+                button.BackColor = isCurrent
+                    ? Color.FromArgb(0, 120, 215)
+                    : isAnswered
+                        ? Color.FromArgb(198, 239, 206)
+                        : Color.White;
+                button.ForeColor = isCurrent ? Color.White : Color.Black;
+                button.FlatStyle = FlatStyle.Flat;
+                button.FlatAppearance.BorderColor = Color.FromArgb(58, 68, 78);
+                button.FlatAppearance.BorderSize = isCurrent ? 2 : 1;
+            }
+        }
+
+        private bool HasAnswerForQuestion(int questionIndex)
+        {
+            if (!userAnswers.TryGetValue(questionIndex, out var value) || value == null)
+                return false;
+
+            if (value is string text)
+                return !string.IsNullOrWhiteSpace(text);
+
+            if (value is List<string> many)
+                return many.Count > 0;
+
+            return true;
+        }
 
         private void TestTimer_Tick(object sender, EventArgs e)
         {
@@ -218,7 +323,6 @@ namespace TESTS
             {
                 remainingTime = TimeSpan.Zero;
                 UpdateTimerLabel();
-                testTimer.Stop();
                 ShowResult();
                 return;
             }
@@ -235,10 +339,14 @@ namespace TESTS
             );
         }
 
-        // ================= QUESTION NUMBER =================
-
         private void UpdateQuestionNumber()
         {
+            if (questions.Count == 0)
+            {
+                labelQNum.Text = "Вопрос 0 из 0";
+                return;
+            }
+
             labelQNum.Text = string.Format(
                 "Вопрос {0} из {1}",
                 currentIndex + 1,
@@ -246,54 +354,34 @@ namespace TESTS
             );
         }
 
-        private void labelTimer_Click(object sender, EventArgs e)
-        {
-            // ничего не нужно
-        }
-
-        // ================= RESULT =================
-
         private void ShowResult()
         {
+            if (resultShown)
+                return;
+
+            resultShown = true;
             testTimer.Stop();
+            SaveAnswer();
 
-            int correct = 0;
+            var correct = 0;
 
-            for (int i = 0; i < questions.Count; i++)
+            for (var i = 0; i < questions.Count; i++)
             {
                 if (!userAnswers.ContainsKey(i))
                     continue;
 
                 var q = questions[i];
                 var ua = userAnswers[i];
-
-                switch (q.Type)
-                {
-                    case QuestionType.Single:
-                        if (Normalize((string)ua) == Normalize(q.Answer))
-                            correct++;
-                        break;
-
-                    case QuestionType.Multiple:
-                        var user = ((List<string>)ua).Select(Normalize).OrderBy(x => x);
-                        var right = q.Answer.Split(';').Select(Normalize).OrderBy(x => x);
-                        if (user.SequenceEqual(right))
-                            correct++;
-                        break;
-
-                    case QuestionType.Text:
-                        if (Normalize((string)ua) == Normalize(q.Answer))
-                            correct++;
-                        break;
-                }
+                if (SecurityService.VerifyQuestionAnswer(q, ua))
+                    correct++;
             }
 
-            double percent = questions.Count == 0
+            var percent = questions.Count == 0
                 ? 0
                 : (double)correct / questions.Count * 100;
 
             MessageBox.Show(
-                $"Тест завершён!\n\n" +
+                "Тест завершён!\n\n" +
                 $"Правильных ответов: {correct} из {questions.Count}\n" +
                 $"Результат: {percent:0}%",
                 "Результат теста",
@@ -301,15 +389,281 @@ namespace TESTS
                 MessageBoxIcon.Information
             );
 
+            closingFromResult = true;
             DialogResult = DialogResult.OK;
             Close();
         }
 
-        // ================= UTILS =================
-
-        private string Normalize(string s)
+        private void buttonFinishEarly_Click(object sender, EventArgs e)
         {
-            return s?.Trim().ToLowerInvariant() ?? string.Empty;
+            var result = MessageBox.Show(
+                "Завершить тест досрочно и показать результат?",
+                "Досрочное завершение",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
+            if (result == DialogResult.Yes)
+            {
+                ShowResult();
+            }
+        }
+
+        protected override void OnFormClosed(FormClosedEventArgs e)
+        {
+            if (testTimer != null)
+            {
+                testTimer.Stop();
+                testTimer.Dispose();
+            }
+            base.OnFormClosed(e);
+        }
+
+        protected override void OnFormClosing(FormClosingEventArgs e)
+        {
+            if (!closingFromResult && e.CloseReason == CloseReason.UserClosing && !resultShown)
+            {
+                var result = MessageBox.Show(
+                    "Тест еще не завершен. Завершить досрочно и показать результат?",
+                    "Подтверждение выхода",
+                    MessageBoxButtons.YesNo,
+                    MessageBoxIcon.Question
+                );
+
+                if (result == DialogResult.Yes)
+                {
+                    e.Cancel = true;
+                    BeginInvoke(new Action(() =>
+                    {
+                        if (!IsDisposed && !Disposing)
+                        {
+                            ShowResult();
+                        }
+                    }));
+                    return;
+                }
+
+                e.Cancel = true;
+                return;
+            }
+
+            base.OnFormClosing(e);
+        }
+
+        private void test_panel_Resize(object sender, EventArgs e)
+        {
+            if (WindowState == FormWindowState.Minimized || WindowState == FormWindowState.Normal)
+            {
+                WindowState = FormWindowState.Maximized;
+            }
+
+            ApplyAdaptiveTypography();
+            ApplyResponsiveLayout();
+        }
+
+        private void ApplyResponsiveLayout()
+        {
+            var margin = UiTheme.ScalePx(12, uiScale);
+            var gap = UiTheme.ScalePx(8, uiScale);
+
+            var timerY = margin + 6;
+            labelTimer.Location = new Point(ClientSize.Width - margin - labelTimer.Width, timerY);
+            label1.Location = new Point(labelTimer.Left - gap - label1.Width, timerY);
+            labelQNum.Location = new Point(margin, timerY);
+
+            var navigationTop = Math.Max(labelQNum.Bottom, labelTimer.Bottom) + UiTheme.ScalePx(10, uiScale);
+            var navPadding = UiTheme.ScalePx(10, uiScale);
+            var navButtonGap = UiTheme.ScalePx(8, uiScale);
+            var navButtonSize = UiTheme.ScalePx(44, uiScale);
+            var navHeaderHeight = UiTheme.ScalePx(26, uiScale);
+            var navWidth = ClientSize.Width - margin * 2;
+            var navInnerWidth = Math.Max(100, navWidth - navPadding * 2);
+            var buttonsPerRow = Math.Max(1, (navInnerWidth + navButtonGap) / (navButtonSize + navButtonGap));
+            var questionCount = questions == null ? 0 : questions.Count;
+            var rows = Math.Max(1, (int)Math.Ceiling(questionCount / (double)buttonsPerRow));
+            var navInnerHeight = rows * navButtonSize + (rows - 1) * navButtonGap;
+            var navHeight = navHeaderHeight + navPadding + navInnerHeight + navPadding;
+
+            groupNavigation.SetBounds(margin, navigationTop, navWidth, navHeight);
+            panelNavigation.SetBounds(
+                navPadding,
+                navHeaderHeight,
+                Math.Max(100, groupNavigation.ClientSize.Width - navPadding * 2),
+                Math.Max(navButtonSize, navInnerHeight + navButtonGap)
+            );
+
+            var contentTop = groupNavigation.Bottom + gap;
+            var buttonsHeight = UiTheme.ScalePx(48, uiScale);
+            var contentHeight = ClientSize.Height - contentTop - margin - gap - buttonsHeight;
+            pnlContent.SetBounds(margin, contentTop, ClientSize.Width - margin * 2, Math.Max(180, contentHeight));
+
+            var buttonTop = pnlContent.Bottom + gap;
+            var buttonWidth = (pnlContent.Width - gap * 2) / 3;
+            btnBack.SetBounds(margin, buttonTop, buttonWidth, buttonsHeight);
+            btnNext_Click.SetBounds(btnBack.Right + gap, buttonTop, buttonWidth, buttonsHeight);
+            if (buttonFinishEarly != null)
+            {
+                buttonFinishEarly.SetBounds(btnNext_Click.Right + gap, buttonTop, buttonWidth, buttonsHeight);
+            }
+
+            UpdateContentControlWidths();
+        }
+
+        private void UpdateContentControlWidths()
+        {
+            var maxWidth = Math.Max(200, pnlContent.ClientSize.Width - 42);
+
+            foreach (var control in pnlContent.Controls)
+            {
+                if (control is Label label)
+                {
+                    label.MaximumSize = new Size(maxWidth, 0);
+                }
+                else if (control is TextBox textBox)
+                {
+                    textBox.Width = maxWidth;
+                }
+            }
+        }
+
+        private void ApplyAdaptiveTypography()
+        {
+            uiScale = UiTheme.GetAdaptiveScale(this, new Size(1028, 707));
+            UiTheme.ApplyBase(this, uiScale);
+            UiTheme.StylePrimaryButton(btnNext_Click, uiScale);
+            UiTheme.StyleSecondaryButton(btnBack, uiScale);
+            if (buttonFinishEarly != null)
+            {
+                UiTheme.StyleDangerButton(buttonFinishEarly, uiScale);
+            }
+            if (groupNavigation != null)
+            {
+                groupNavigation.Font = UiTheme.CreateFont(15f, uiScale, FontStyle.Bold);
+            }
+
+            var navButtonSize = UiTheme.ScalePx(44, uiScale);
+            var navButtonGap = UiTheme.ScalePx(8, uiScale);
+            foreach (var button in questionNavButtons)
+            {
+                button.Width = navButtonSize;
+                button.Height = navButtonSize;
+                button.Margin = new Padding(0, 0, navButtonGap, navButtonGap);
+                button.Font = UiTheme.CreateFont(12.5f, uiScale, FontStyle.Regular);
+            }
+            UpdateQuestionNavigationButtonsState();
+
+            labelQNum.Font = UiTheme.CreateFont(15f, uiScale, FontStyle.Bold);
+            label1.Font = UiTheme.CreateFont(15f, uiScale, FontStyle.Bold);
+            labelTimer.Font = UiTheme.CreateFont(15f, uiScale, FontStyle.Bold);
+        }
+
+        private static List<Question> SelectQuestionsForAttempt(List<Question> pool, int targetCount, Random rnd)
+        {
+            var source = (pool ?? new List<Question>())
+                .Where(q => q != null && !string.IsNullOrWhiteSpace(q.Text))
+                .OrderBy(_ => rnd.Next())
+                .ToList();
+
+            var selected = new List<Question>();
+            var usedFingerprint = new HashSet<string>(StringComparer.Ordinal);
+            var usedFamily = new HashSet<string>(StringComparer.Ordinal);
+
+            // 1st pass: maximize semantic uniqueness (one family -> one question).
+            foreach (var question in source)
+            {
+                if (selected.Count >= targetCount)
+                    break;
+
+                var fingerprint = BuildQuestionFingerprint(question);
+                if (!usedFingerprint.Add(fingerprint))
+                    continue;
+
+                var family = BuildQuestionFamilyKey(question);
+                if (!usedFamily.Add(family))
+                {
+                    usedFingerprint.Remove(fingerprint);
+                    continue;
+                }
+
+                selected.Add(question);
+            }
+
+            // 2nd pass: if not enough unique families, add remaining unique questions.
+            if (selected.Count < targetCount)
+            {
+                foreach (var question in source)
+                {
+                    if (selected.Count >= targetCount)
+                        break;
+
+                    var fingerprint = BuildQuestionFingerprint(question);
+                    if (!usedFingerprint.Add(fingerprint))
+                        continue;
+
+                    selected.Add(question);
+                }
+            }
+
+            return selected;
+        }
+
+        private static string BuildQuestionFamilyKey(Question question)
+        {
+            var text = NormalizeForKey(question.Text);
+            if (string.IsNullOrWhiteSpace(text))
+                return "empty";
+
+            // For theoretical singles: group by term inside «...», so "что означает термин X"
+            // will not appear multiple times in one attempt with different wording.
+            if (question.Type == QuestionType.Single)
+            {
+                var quoted = ExtractQuotedTerm(text);
+                if (!string.IsNullOrWhiteSpace(quoted))
+                    return "single-term::" + quoted;
+            }
+
+            return ((int)question.Type).ToString() + "::" + text;
+        }
+
+        private static string BuildQuestionFingerprint(Question question)
+        {
+            var options = (question.Options ?? new List<string>())
+                .Select(NormalizeForKey)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .OrderBy(x => x, StringComparer.Ordinal);
+
+            return ((int)question.Type).ToString() + "|" +
+                   NormalizeForKey(question.Text) + "|" +
+                   string.Join(";", options);
+        }
+
+        private static string NormalizeForKey(string value)
+        {
+            var normalized = (value ?? string.Empty).Trim().ToLowerInvariant();
+            normalized = Regex.Replace(normalized, @"\s+", " ");
+            return normalized;
+        }
+
+        private static string ExtractQuotedTerm(string text)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                return string.Empty;
+
+            var start = text.IndexOf('«');
+            var end = text.IndexOf('»');
+            if (start >= 0 && end > start)
+            {
+                return NormalizeForKey(text.Substring(start + 1, end - start - 1));
+            }
+
+            var quoteMatch = Regex.Match(text, "\"([^\"]+)\"");
+            if (quoteMatch.Success && quoteMatch.Groups.Count > 1)
+            {
+                return NormalizeForKey(quoteMatch.Groups[1].Value);
+            }
+
+            return string.Empty;
         }
     }
 }
+
