@@ -168,7 +168,7 @@ namespace TESTS
             if (dataGridView1.Columns.Contains("ShowAnswer"))
             {
                 var col = dataGridView1.Columns["ShowAnswer"];
-                col.HeaderText = "Глаз";
+                col.HeaderText = "Ответ";
                 col.Width = Math.Max(UiTheme.ScalePx(90, uiScale), GetHeaderWidth(col.HeaderText));
             }
 
@@ -214,7 +214,7 @@ namespace TESTS
             var showColumn = new DataGridViewButtonColumn
             {
                 Name = "ShowAnswer",
-                HeaderText = "Глаз",
+                HeaderText = "Ответ",
                 Text = "👁",
                 ToolTipText = "Показать правильный ответ",
                 UseColumnTextForButtonValue = true,
