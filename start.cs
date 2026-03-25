@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 
 namespace TESTS
@@ -16,12 +17,13 @@ namespace TESTS
             StartPosition = FormStartPosition.CenterScreen;
             MinimumSize = new Size(920, 540);
             WindowState = FormWindowState.Maximized;
-            ApplyAdaptiveTypography();
             richTextBox1.ShortcutsEnabled = false;
             richTextBox1.SelectionChanged += richTextBox1_SelectionChanged;
             Load += Start_Load;
             Resize += Start_Resize;
             Shown += Start_Shown;
+
+            ApplyAdaptiveTypography();
             ApplyResponsiveLayout();
         }
 
@@ -111,12 +113,7 @@ namespace TESTS
                 return;
             }
 
-            richTextBox1.Text =
-                selectedTest.Title + "\n\n" +
-                selectedTest.Description + "\n\n" +
-                "Время: " + selectedTest.TimeMinutes + " мин.\n" +
-                "В банке: " + selectedTest.Questions.Count + "\n" +
-                "В попытке: 20";
+            richTextBox1.Text = BuildMainScreenDescription(selectedTest);
         }
 
         private void Start_Resize(object sender, EventArgs e)
@@ -129,47 +126,36 @@ namespace TESTS
         {
             var margin = UiTheme.ScalePx(12, uiScale);
             var gap = UiTheme.ScalePx(8, uiScale);
-            var leftMinWidth = UiTheme.ScalePx(360, uiScale);
-            var rightMinWidth = UiTheme.ScalePx(320, uiScale);
-            var preferredRight = GetPreferredComboWidth();
-            var rightMaxByRatio = (int)(ClientSize.Width * 0.50f);
-            var rightMaxByPixels = UiTheme.ScalePx(760, uiScale);
-            var rightMaxByLayout = ClientSize.Width - margin * 2 - gap - leftMinWidth;
-            var rightMaxWidth = Math.Max(rightMinWidth, Math.Min(Math.Min(rightMaxByRatio, rightMaxByPixels), rightMaxByLayout));
-            var rightWidth = Clamp(preferredRight, rightMinWidth, rightMaxWidth);
-            var rightX = ClientSize.Width - rightWidth - margin;
-
-            comboBoxTests.SetBounds(rightX, margin, rightWidth, UiTheme.ScalePx(36, uiScale));
+            var comboHeight = UiTheme.ScalePx(36, uiScale);
+            comboBoxTests.SetBounds(
+                margin,
+                margin,
+                Math.Max(UiTheme.ScalePx(360, uiScale), ClientSize.Width - margin * 2),
+                comboHeight
+            );
             UpdateComboDropDownWidth();
 
-            var buttonsTop = comboBoxTests.Bottom + gap;
-            var availableHeight = ClientSize.Height - buttonsTop - margin;
+            var contentTop = comboBoxTests.Bottom + gap;
+            var contentHeight = Math.Max(UiTheme.ScalePx(240, uiScale), ClientSize.Height - contentTop - margin);
+
+            var rightWidth = Clamp(
+                (int)(ClientSize.Width * 0.24f),
+                UiTheme.ScalePx(280, uiScale),
+                UiTheme.ScalePx(440, uiScale)
+            );
+            var maxRightByLayout = ClientSize.Width - margin * 2 - gap - UiTheme.ScalePx(340, uiScale);
+            rightWidth = Clamp(rightWidth, UiTheme.ScalePx(240, uiScale), Math.Max(UiTheme.ScalePx(240, uiScale), maxRightByLayout));
+
+            var rightX = ClientSize.Width - margin - rightWidth;
             var buttonMin = UiTheme.ScalePx(90, uiScale);
             var buttonMax = UiTheme.ScalePx(190, uiScale);
-            var buttonHeight = Math.Min(buttonMax, Math.Max(buttonMin, (availableHeight - gap) / 2));
+            var buttonHeight = Math.Min(buttonMax, Math.Max(buttonMin, (contentHeight - gap) / 2));
 
-            button1.SetBounds(rightX, buttonsTop, rightWidth, buttonHeight);
+            button1.SetBounds(rightX, contentTop, rightWidth, buttonHeight);
             button2.SetBounds(rightX, button1.Bottom + gap, rightWidth, buttonHeight);
 
-            var leftWidth = Math.Max(UiTheme.ScalePx(360, uiScale), rightX - margin - gap);
-            richTextBox1.SetBounds(margin, margin, leftWidth, ClientSize.Height - margin * 2);
-        }
-
-        private int GetPreferredComboWidth()
-        {
-            var width = UiTheme.ScalePx(320, uiScale);
-
-            using (var g = comboBoxTests.CreateGraphics())
-            {
-                foreach (var test in tests)
-                {
-                    var measured = TextRenderer.MeasureText(g, test.Title ?? string.Empty, comboBoxTests.Font).Width + 40;
-                    if (measured > width)
-                        width = measured;
-                }
-            }
-
-            return Math.Min(width, Math.Max(UiTheme.ScalePx(320, uiScale), (int)(ClientSize.Width * 0.50)));
+            var leftWidth = Math.Max(UiTheme.ScalePx(340, uiScale), rightX - margin - gap);
+            richTextBox1.SetBounds(margin, contentTop, leftWidth, contentHeight);
         }
 
         private void UpdateComboDropDownWidth()
@@ -186,9 +172,7 @@ namespace TESTS
             }
 
             var screen = Screen.FromControl(this).WorkingArea;
-            var comboLeftOnScreen = comboBoxTests.PointToScreen(Point.Empty).X;
-            var availableToRight = screen.Right - comboLeftOnScreen - UiTheme.ScalePx(12, uiScale);
-            var max = Math.Max(comboBoxTests.Width, availableToRight);
+            var max = Math.Max(comboBoxTests.Width, screen.Width - UiTheme.ScalePx(24, uiScale));
             comboBoxTests.DropDownWidth = Math.Min(Math.Max(comboBoxTests.Width, width), max);
         }
 
@@ -200,6 +184,62 @@ namespace TESTS
             UiTheme.StyleInput(richTextBox1, uiScale);
             UiTheme.StylePrimaryButton(button1, uiScale);
             UiTheme.StyleSecondaryButton(button2, uiScale);
+        }
+
+        private static string BuildMainScreenDescription(Test selectedTest)
+        {
+            if (selectedTest == null)
+                return string.Empty;
+
+            var title = (selectedTest.Title ?? string.Empty).Trim();
+            var description = (selectedTest.Description ?? string.Empty).Replace("\r\n", "\n").Trim();
+            if (string.IsNullOrWhiteSpace(description))
+            {
+                var attempt = Math.Min(20, Math.Max(1, selectedTest.Questions.Count));
+                return "Время: " + attempt + " мин. (1 вопрос = 1 мин.)\n" +
+                       "В банке: " + selectedTest.Questions.Count + "\n" +
+                       "В попытке: " + attempt;
+            }
+
+            var lines = new List<string>();
+            foreach (var line in description.Split('\n'))
+            {
+                lines.Add((line ?? string.Empty).TrimEnd());
+            }
+
+            // Убираем дубли названия теста в начале описания.
+            while (true)
+            {
+                var firstNonEmptyIndex = -1;
+                for (var i = 0; i < lines.Count; i++)
+                {
+                    if (!string.IsNullOrWhiteSpace(lines[i]))
+                    {
+                        firstNonEmptyIndex = i;
+                        break;
+                    }
+                }
+
+                if (firstNonEmptyIndex < 0)
+                    break;
+
+                var firstLine = lines[firstNonEmptyIndex].Trim();
+                if (!string.Equals(firstLine, title, StringComparison.OrdinalIgnoreCase))
+                    break;
+
+                lines.RemoveAt(firstNonEmptyIndex);
+            }
+
+            // Убираем служебную строку версии банка из текста для студента/преподавателя.
+            lines = lines
+                .Where(line =>
+                {
+                    var text = (line ?? string.Empty).TrimStart();
+                    return !text.StartsWith("Версия банка:", StringComparison.OrdinalIgnoreCase);
+                })
+                .ToList();
+
+            return string.Join("\n", lines).Trim();
         }
 
         private static int Clamp(int value, int min, int max)

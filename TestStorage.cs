@@ -1,5 +1,4 @@
 ﻿using LiteDB;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,33 +8,39 @@ public static class TestStorage
 {
     private const string DbFileName = "tests_secure.db";
     private const string CollectionName = "tests";
-    private const int MinimumDefaultTests = 5;
-    private const int MinimumQuestionsPerDefaultTest = 50;
-    private const int MinimumQuestionsInFinalMixedTest = 150;
-    private const int TargetTextQuestionsPerBuiltIn = 8;
-    private const int TargetMultiQuestionsPerBuiltIn = 12;
+    private const int MinimumQuestionsPerDefaultTest = 1;
+    private const int MinimumQuestionsInFinalMixedTest = 20;
     private const string FinalTestId = "tm7-final-advanced";
     private const string FinalAutoPrefix = "final-auto::";
-    private static readonly string[] FinalSourceTestIds =
+    private static readonly string[] LegacyBuiltInIds =
     {
         "tm7-level-1",
         "tm7-level-2",
         "tm7-level-3",
         "tm7-level-4-5"
     };
-    private static readonly string[] PreferredOrder =
+    private static readonly string[] LegacyBuiltInTitles =
     {
-        "tm7-level-1",
-        "tm7-level-2",
-        "tm7-level-3",
-        "tm7-level-4-5",
-        "tm7-final-advanced"
+        "Уровень 1: Базовые понятия TRACE MODE 7",
+        "Уровень 2: СПАД (SIAD)-архив и события",
+        "Уровень 3: MODBUS, DPA и режимы управления",
+        "Уровни 4-5: Документы, Web-доступ и ИБ АСУТП",
+        "Итоговый: смешанный по уровням 1-4"
     };
+    private static readonly Lazy<List<Test>> DefaultCatalogSnapshot =
+        new Lazy<List<Test>>(DefaultTestCatalog.Create);
+    private static readonly Lazy<string[]> PreferredOrder =
+        new Lazy<string[]>(() => DefaultCatalogSnapshot.Value.Select(t => t.Id).ToArray());
+    private static readonly Lazy<string[]> FinalSourceTestIds =
+        new Lazy<string[]>(() => DefaultCatalogSnapshot.Value
+            .Where(t => !string.Equals(t.Id, FinalTestId, StringComparison.Ordinal))
+            .Select(t => t.Id)
+            .ToArray());
     private static readonly Lazy<Dictionary<string, List<string>>> DefaultAnswerMap =
         new Lazy<Dictionary<string, List<string>>>(BuildDefaultAnswerMap);
 
-    // РџР°СЂРѕР»СЊ С€РёС„СЂРѕРІР°РЅРёСЏ РІСЃС‚СЂРѕРµРЅРЅРѕР№ Р‘Р” (AES РІРЅСѓС‚СЂРё LiteDB).
-    private const string DbPassword = "TM7_SECURE_DB_2026_!x9Yp4@mQ2";
+    // Секрет подгружается из security.keys.json рядом с EXE.
+    private static string DbPassword => RuntimeSecrets.DatabasePassword;
 
     public static List<Test> LoadOrCreateDefaultTests(string baseDirectory)
     {
@@ -43,6 +48,7 @@ public static class TestStorage
         if (tests != null && tests.Count > 0)
         {
             var changedByMigration = MigrateToEncryptedOnly(tests);
+            var changedByLegacyCleanup = RemoveLegacyBuiltInTests(tests);
             var changedByQuestionMixUpgrade = UpgradeBuiltInQuestionMixIfNeeded(tests);
             if (EnsureRequiredTestsExist(tests))
             {
@@ -50,7 +56,7 @@ public static class TestStorage
                 return LoadTests(baseDirectory);
             }
 
-            if (changedByMigration || changedByQuestionMixUpgrade)
+            if (changedByMigration || changedByLegacyCleanup || changedByQuestionMixUpgrade)
             {
                 SaveTests(baseDirectory, tests);
                 return LoadTests(baseDirectory);
@@ -101,8 +107,8 @@ public static class TestStorage
         if (File.Exists(dbPath))
             return;
 
-        // РќРµ РјРёРіСЂРёСЂСѓРµРј Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё legacy tests.enc РЅР° СЃС‚Р°СЂС‚Рµ:
-        // СЌС‚Рѕ РјРѕР¶РµС‚ СЃРёР»СЊРЅРѕ С‚РѕСЂРјРѕР·РёС‚СЊ Р·Р°РїСѓСЃРє Рё Р±Р»РѕРєРёСЂРѕРІР°С‚СЊ РѕС‚РѕР±СЂР°Р¶РµРЅРёРµ С„РѕСЂРјС‹.
+        // Не мигрируем автоматически legacy tests.enc на старте:
+        // это может сильно тормозить запуск и блокировать отображение формы.
         var defaults = DefaultTestCatalog.Create();
         SaveTests(baseDirectory, defaults);
         CleanupLegacyFiles(baseDirectory);
@@ -126,7 +132,7 @@ public static class TestStorage
             }
             catch
             {
-                // РРіРЅРѕСЂРёСЂСѓРµРј: СЃС‚Р°СЂС‹Рµ С„Р°Р№Р»С‹ РЅРµ РєСЂРёС‚РёС‡РЅС‹ РґР»СЏ СЂР°Р±РѕС‚С‹ Р‘Р”.
+                // Игнорируем: старые файлы не критичны для работы БД.
             }
         }
     }
@@ -151,10 +157,11 @@ public static class TestStorage
 
     private static bool IsDefaultPoolActual(List<Test> tests)
     {
-        if (tests == null || tests.Count < MinimumDefaultTests)
+        var requiredIds = PreferredOrder.Value;
+        if (tests == null || tests.Count < requiredIds.Length)
             return false;
 
-        foreach (var id in PreferredOrder)
+        foreach (var id in requiredIds)
         {
             var test = tests.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.Ordinal));
             if (test == null)
@@ -185,7 +192,7 @@ public static class TestStorage
             .ToDictionary(t => t.Id, StringComparer.Ordinal);
 
         var changed = false;
-        foreach (var id in PreferredOrder)
+        foreach (var id in PreferredOrder.Value)
         {
             if (tests.Any(t => string.Equals(t.Id, id, StringComparison.Ordinal)))
                 continue;
@@ -262,8 +269,9 @@ public static class TestStorage
 
         SynchronizeFinalMixedTest(tests);
 
+        var preferredOrder = PreferredOrder.Value;
         return tests
-            .OrderBy(t => Array.IndexOf(PreferredOrder, t.Id) < 0 ? int.MaxValue : Array.IndexOf(PreferredOrder, t.Id))
+            .OrderBy(t => Array.IndexOf(preferredOrder, t.Id) < 0 ? int.MaxValue : Array.IndexOf(preferredOrder, t.Id))
             .ThenBy(t => t.Title, StringComparer.OrdinalIgnoreCase)
             .ToList();
     }
@@ -358,12 +366,12 @@ public static class TestStorage
         if (tests == null || tests.Count == 0)
             return false;
 
-        var defaults = DefaultTestCatalog.Create()
+        var defaults = DefaultCatalogSnapshot.Value
             .Where(t => !string.Equals(t.Id, FinalTestId, StringComparison.Ordinal))
             .ToDictionary(t => t.Id, StringComparer.Ordinal);
 
         var changed = false;
-        foreach (var id in FinalSourceTestIds)
+        foreach (var id in FinalSourceTestIds.Value)
         {
             if (!defaults.TryGetValue(id, out var defaultTest))
                 continue;
@@ -373,47 +381,168 @@ public static class TestStorage
                 continue;
 
             var currentQuestions = current.Questions ?? new List<Question>();
-            var currentText = currentQuestions.Count(q => q.Type == QuestionType.Text);
-            var currentMulti = currentQuestions.Count(q => q.Type == QuestionType.Multiple);
-            var hasLegacySymptomWording = currentQuestions.Any(q =>
-                (q.Text ?? string.Empty).IndexOf("РЎРёРјРїС‚РѕРј:", StringComparison.OrdinalIgnoreCase) >= 0 ||
-                (q.Text ?? string.Empty).IndexOf("РёРЅР¶РµРЅРµСЂРЅРѕ РєРѕСЂСЂРµРєС‚РЅС‹Р№ С€Р°Рі", StringComparison.OrdinalIgnoreCase) >= 0);
-            var hasLegacyLevelTitle =
-                (id == "tm7-level-2" &&
-                 (current.Title ?? string.Empty).IndexOf("SIAD-архив", StringComparison.OrdinalIgnoreCase) >= 0) ||
-                (id == "tm7-level-4-5" &&
-                 (current.Title ?? string.Empty).IndexOf("Документы и Web-доступ", StringComparison.OrdinalIgnoreCase) >= 0);
+            var defaultQuestions = defaultTest.Questions ?? new List<Question>();
+            var defaultDescriptionHasVersionLabel =
+                (defaultTest.Description ?? string.Empty)
+                    .IndexOf("Версия банка:", StringComparison.OrdinalIgnoreCase) >= 0;
             var hasOutdatedReadableVersion =
+                defaultDescriptionHasVersionLabel &&
                 (current.Description ?? string.Empty)
                     .IndexOf(DefaultTestCatalog.ReadableCatalogVersion, StringComparison.OrdinalIgnoreCase) < 0;
-            var hasCatalogTextMismatch =
-                !string.Equals((current.Title ?? string.Empty).Trim(), (defaultTest.Title ?? string.Empty).Trim(), StringComparison.Ordinal) ||
-                !string.Equals((current.Description ?? string.Empty).Trim(), (defaultTest.Description ?? string.Empty).Trim(), StringComparison.Ordinal);
-
+            var hasQuestionCountMismatch = currentQuestions.Count != defaultQuestions.Count;
+            var hasQuestionTextMismatch = !HaveSameQuestionTextSet(currentQuestions, defaultQuestions);
+            var hasQuestionStructureMismatch = !HaveSameQuestionFingerprintSet(currentQuestions, defaultQuestions);
+            var shouldRefreshMetadata = ShouldRefreshBuiltInMetadata(current, defaultTest, hasOutdatedReadableVersion);
 
             var needsUpgrade =
-                currentQuestions.Count < MinimumQuestionsPerDefaultTest ||
-                currentText < TargetTextQuestionsPerBuiltIn ||
-                currentMulti < TargetMultiQuestionsPerBuiltIn ||
-                hasLegacySymptomWording ||
-                hasLegacyLevelTitle ||
-                hasOutdatedReadableVersion ||
-                hasCatalogTextMismatch;
+                hasQuestionCountMismatch ||
+                hasQuestionTextMismatch ||
+                hasQuestionStructureMismatch ||
+                shouldRefreshMetadata;
 
             if (!needsUpgrade)
                 continue;
 
-            current.Title = defaultTest.Title;
-            current.Description = defaultTest.Description;
-            current.TimeMinutes = defaultTest.TimeMinutes;
-            current.Questions = defaultTest.Questions
-                .Select(CloneQuestion)
-                .ToList();
+            if (shouldRefreshMetadata)
+            {
+                current.Title = defaultTest.Title;
+                current.Description = defaultTest.Description;
+                changed = true;
+            }
 
-            changed = true;
+            if (hasQuestionCountMismatch || hasQuestionTextMismatch || hasQuestionStructureMismatch)
+            {
+                current.Questions = defaultTest.Questions
+                    .Select(CloneQuestion)
+                    .ToList();
+                changed = true;
+            }
+
+            if (current.TimeMinutes <= 0)
+            {
+                current.TimeMinutes = defaultTest.TimeMinutes;
+                changed = true;
+            }
         }
 
         return changed;
+    }
+
+    private static bool ShouldRefreshBuiltInMetadata(Test current, Test defaultTest, bool hasOutdatedReadableVersion)
+    {
+        var currentTitle = (current.Title ?? string.Empty).Trim();
+        var currentDescription = (current.Description ?? string.Empty).Trim();
+        var defaultTitle = (defaultTest.Title ?? string.Empty).Trim();
+        var defaultDescription = (defaultTest.Description ?? string.Empty).Trim();
+
+        if (string.IsNullOrWhiteSpace(currentTitle) || string.IsNullOrWhiteSpace(currentDescription))
+            return true;
+
+        if (LooksLikeLegacySectionDescription(currentDescription))
+            return true;
+
+        if (currentDescription.IndexOf("Версия банка:", StringComparison.OrdinalIgnoreCase) >= 0)
+            return true;
+
+        if (hasOutdatedReadableVersion &&
+            string.Equals(currentTitle, defaultTitle, StringComparison.Ordinal) &&
+            string.Equals(currentDescription, defaultDescription, StringComparison.Ordinal))
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool LooksLikeLegacySectionDescription(string description)
+    {
+        var text = (description ?? string.Empty).Trim();
+        if (text.Length == 0)
+            return true;
+
+        return text.StartsWith("Полный набор тем из справки TRACE MODE 7 по разделу", StringComparison.Ordinal) ||
+               text.StartsWith("Содержит объединенный банк теоретических вопросов по всем разделам справки TRACE MODE 7.", StringComparison.Ordinal);
+    }
+
+    private static bool RemoveLegacyBuiltInTests(List<Test> tests)
+    {
+        if (tests == null || tests.Count == 0)
+            return false;
+
+        var requiredIds = new HashSet<string>(PreferredOrder.Value, StringComparer.Ordinal);
+        var removed = tests.RemoveAll(t => IsLegacyBuiltInTest(t, requiredIds));
+        return removed > 0;
+    }
+
+    private static bool IsLegacyBuiltInTest(Test test, HashSet<string> requiredIds)
+    {
+        if (test == null)
+            return false;
+
+        var id = (test.Id ?? string.Empty).Trim();
+        var title = (test.Title ?? string.Empty).Trim();
+
+        if (requiredIds.Contains(id))
+            return false;
+
+        if (LegacyBuiltInIds.Any(x => string.Equals(x, id, StringComparison.Ordinal)))
+            return true;
+
+        if (LegacyBuiltInTitles.Any(x => string.Equals(x, title, StringComparison.Ordinal)))
+            return true;
+
+        if (id.StartsWith("tm7-level-", StringComparison.Ordinal))
+            return true;
+
+        if (id.StartsWith("tm7-final-", StringComparison.Ordinal) && !string.Equals(id, FinalTestId, StringComparison.Ordinal))
+            return true;
+
+        if (id.StartsWith("tm7-sec-", StringComparison.Ordinal))
+            return true;
+
+        return false;
+    }
+
+    private static bool HaveSameQuestionTextSet(List<Question> left, List<Question> right)
+    {
+        left = left ?? new List<Question>();
+        right = right ?? new List<Question>();
+
+        if (left.Count != right.Count)
+            return false;
+
+        var leftSet = new HashSet<string>(
+            left.Select(q => NormalizeFingerprintPart(q.Text)),
+            StringComparer.Ordinal
+        );
+
+        var rightSet = new HashSet<string>(
+            right.Select(q => NormalizeFingerprintPart(q.Text)),
+            StringComparer.Ordinal
+        );
+
+        return leftSet.SetEquals(rightSet);
+    }
+
+    private static bool HaveSameQuestionFingerprintSet(List<Question> left, List<Question> right)
+    {
+        left = left ?? new List<Question>();
+        right = right ?? new List<Question>();
+
+        if (left.Count != right.Count)
+            return false;
+
+        var leftSet = new HashSet<string>(
+            left.Select(BuildQuestionUniqueKey),
+            StringComparer.Ordinal
+        );
+
+        var rightSet = new HashSet<string>(
+            right.Select(BuildQuestionUniqueKey),
+            StringComparer.Ordinal
+        );
+
+        return leftSet.SetEquals(rightSet);
     }
 
     private static void SynchronizeFinalMixedTest(List<Test> tests)
@@ -421,12 +550,13 @@ public static class TestStorage
         if (tests == null || tests.Count == 0)
             return;
 
-        var sourceTests = FinalSourceTestIds
+        var sourceIds = FinalSourceTestIds.Value;
+        var sourceTests = sourceIds
             .Select(id => tests.FirstOrDefault(t => string.Equals(t.Id, id, StringComparison.Ordinal)))
             .Where(t => t != null)
             .ToList();
 
-        if (sourceTests.Count != FinalSourceTestIds.Length)
+        if (sourceTests.Count != sourceIds.Length)
             return;
 
         var finalTest = tests.FirstOrDefault(t => string.Equals(t.Id, FinalTestId, StringComparison.Ordinal));
@@ -435,8 +565,8 @@ public static class TestStorage
             finalTest = new Test
             {
                 Id = FinalTestId,
-                Title = "РС‚РѕРіРѕРІС‹Р№: СЃРјРµС€Р°РЅРЅС‹Р№ РїРѕ 4 РїСЂРµРґС‹РґСѓС‰РёРј С‚РµСЃС‚Р°Рј",
-                Description = "РС‚РѕРіРѕРІС‹Р№ С‚РµСЃС‚ Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё СЃРѕР±РёСЂР°РµС‚СЃСЏ РёР· СѓСЂРѕРІРЅРµР№ 1-4 Рё РјРѕР¶РµС‚ СЃРѕРґРµСЂР¶Р°С‚СЊ РґРѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РІРѕРїСЂРѕСЃС‹ РїСЂРµРїРѕРґР°РІР°С‚РµР»СЏ.",
+                Title = "Итоговый: полный пул по всем разделам",
+                Description = "Сборный итоговый тест по всем разделам справки TRACE MODE 7.",
                 TimeMinutes = 20,
                 Questions = new List<Question>()
             };
@@ -444,8 +574,8 @@ public static class TestStorage
         }
 
         finalTest.Questions = finalTest.Questions ?? new List<Question>();
-        finalTest.Title = "Итоговый: смешанный по уровням 1-4";
-        finalTest.Description = "Формируется смешиванием вопросов из уровней 1, 2, 3 и 4-5. Дополнительные вопросы преподавателя сохраняются.";
+        finalTest.Title = "Итоговый: полный пул по всем разделам";
+        finalTest.Description = "Формируется смешиванием вопросов из всех разделов справки TRACE MODE 7. Дополнительные вопросы преподавателя сохраняются.";
 
         finalTest.TimeMinutes = finalTest.TimeMinutes > 0 ? finalTest.TimeMinutes : 20;
 
@@ -463,8 +593,8 @@ public static class TestStorage
 
         var hasTaggedAutoQuestions = finalTest.Questions.Any(q => !string.IsNullOrWhiteSpace(q.FinalSourceKey));
 
-        // РЎРѕС…СЂР°РЅСЏРµРј С‚РѕР»СЊРєРѕ РІСЂСѓС‡РЅСѓСЋ РґРѕР±Р°РІР»РµРЅРЅС‹Рµ РІРѕРїСЂРѕСЃС‹ РёС‚РѕРіРѕРІРѕРіРѕ С‚РµСЃС‚Р°.
-        // Legacy-Р°РІС‚РѕРјР°С‚РёС‡РµСЃРєРёРµ РІРѕРїСЂРѕСЃС‹ (Р±РµР· FinalSourceKey) РѕС‚С„РёР»СЊС‚СЂРѕРІС‹РІР°СЋС‚СЃСЏ РїРѕ СЃРѕРІРїР°РґР°СЋС‰РµРјСѓ РѕС‚РїРµС‡Р°С‚РєСѓ.
+        // Сохраняем только вручную добавленные вопросы итогового теста.
+        // Legacy-автоматические вопросы (без FinalSourceKey) отфильтровываются по совпадающему отпечатку.
         var manualQuery = finalTest.Questions
             .Where(q => string.IsNullOrWhiteSpace(q.FinalSourceKey));
 

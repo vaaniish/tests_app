@@ -12,3 +12,6 @@
 
 # Logs
 **/[Ll]ogs/
+
+# Local release bundles
+dist/

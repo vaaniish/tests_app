@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Cryptography;
@@ -17,9 +17,7 @@ public static class SecurityService
     private const string PortableLegacyPayloadVersion = "v2";
     private const string LegacyPayloadVersion = "v1";
 
-    // Общий ключ приложения (переносим между ПК вместе с EXE/БД).
-    private const string PortableEncryptionSecret = "TM7_PORTABLE_ENC_SECRET_2026_7hQw4#vL";
-    private const string LegacyAnswerEncryptionSecret = "TM7_APP_LOCAL_ANSWER_KEY_2026_x!4Q";
+    // Секреты подгружаются из security.keys.json рядом с EXE.
     private static readonly byte[] PortableKey = BuildPortableKey();
 
     public static string NormalizeLogin(string value)
@@ -105,7 +103,7 @@ public static class SecurityService
                 var keySalt = Convert.FromBase64String(parts[1]);
                 var iv = Convert.FromBase64String(parts[2]);
                 var cipher = Convert.FromBase64String(parts[3]);
-                var key = DeriveEncryptionKey(PortableEncryptionSecret, keySalt, EncryptionIterations);
+                var key = DeriveEncryptionKey(RuntimeSecrets.PortableEncryptionSecret, keySalt, EncryptionIterations);
                 return DecryptAes(key, iv, cipher);
             }
 
@@ -114,7 +112,7 @@ public static class SecurityService
                 var keySalt = Convert.FromBase64String(parts[1]);
                 var iv = Convert.FromBase64String(parts[2]);
                 var cipher = Convert.FromBase64String(parts[3]);
-                var key = DeriveEncryptionKey(LegacyAnswerEncryptionSecret, keySalt, EncryptionIterations);
+                var key = DeriveEncryptionKey(RuntimeSecrets.LegacyAnswerEncryptionSecret, keySalt, EncryptionIterations);
                 return DecryptAes(key, iv, cipher);
             }
 
@@ -234,7 +232,7 @@ public static class SecurityService
     {
         using (var sha = SHA256.Create())
         {
-            return sha.ComputeHash(Encoding.UTF8.GetBytes(PortableEncryptionSecret));
+            return sha.ComputeHash(Encoding.UTF8.GetBytes(RuntimeSecrets.PortableEncryptionSecret));
         }
     }
 
@@ -283,3 +281,4 @@ public static class SecurityService
         return diff == 0;
     }
 }
+

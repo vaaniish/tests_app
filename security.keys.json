@@ -1,0 +1,9 @@
+{
+  "portableEncryptionSecret": "TM7_PORTABLE_ENC_SECRET_2026_7hQw4#vL",
+  "legacyAnswerEncryptionSecret": "TM7_APP_LOCAL_ANSWER_KEY_2026_x!4Q",
+  "dbPassword": "TM7_SECURE_DB_2026_!x9Yp4@mQ2",
+  "adminLoginSalt": "VKUrMuLXngwVGhMPW2bnEw==",
+  "adminLoginHash": "KQJFq8zCbmPwhpt71FO6WPN+dL2YhugfJryUtsu5C1g=",
+  "adminPasswordSalt": "C24x5m5IUGIF5eVt4PhNpw==",
+  "adminPasswordHash": "23JOQPDZQzqLnBuZUnE7Sn2W7s9k5W0IAuzyw6E1ZHQ="
+}

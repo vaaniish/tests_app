@@ -6,12 +6,6 @@ namespace TESTS
 {
     public partial class admin_login : Form
     {
-        // Логин и пароль хранятся только в виде солей/хэшей.
-        private const string LoginSalt = "VKUrMuLXngwVGhMPW2bnEw==";
-        private const string LoginHash = "KQJFq8zCbmPwhpt71FO6WPN+dL2YhugfJryUtsu5C1g=";
-        private const string PasswordSalt = "C24x5m5IUGIF5eVt4PhNpw==";
-        private const string PasswordHash = "23JOQPDZQzqLnBuZUnE7Sn2W7s9k5W0IAuzyw6E1ZHQ=";
-
         private readonly Button buttonShowPassword;
         private bool passwordVisible;
         private float uiScale = 1f;
@@ -59,8 +53,18 @@ namespace TESTS
             var login = tbLogin.Text;
             var password = tbPassword.Text;
 
-            var loginOk = SecurityService.VerifySecret(login, LoginSalt, LoginHash, normalize: true);
-            var passwordOk = SecurityService.VerifySecret(password, PasswordSalt, PasswordHash, normalize: false);
+            var loginOk = SecurityService.VerifySecret(
+                login,
+                RuntimeSecrets.AdminLoginSalt,
+                RuntimeSecrets.AdminLoginHash,
+                normalize: true
+            );
+            var passwordOk = SecurityService.VerifySecret(
+                password,
+                RuntimeSecrets.AdminPasswordSalt,
+                RuntimeSecrets.AdminPasswordHash,
+                normalize: false
+            );
 
             if (!loginOk || !passwordOk)
             {

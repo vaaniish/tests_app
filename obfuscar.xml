@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Obfuscator>
+  <Var name="InPath" value="bin\Release" />
+  <Var name="OutPath" value="bin\Release\obfuscated" />
+  <Var name="KeepPublicApi" value="true" />
+  <Var name="HidePrivateApi" value="true" />
+  <Var name="UseUnicodeNames" value="false" />
+  <Var name="ReuseNames" value="false" />
+  <Var name="ExtraFrameworkFolders" value="C:\Windows\Microsoft.NET\Framework\v4.0.30319;C:\Windows\Microsoft.NET\Framework64\v4.0.30319;C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2" />
+
+  <Module file="$(InPath)\TESTS.exe" />
+</Obfuscator>

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -11,6 +11,7 @@ namespace TESTS
         private readonly NumericUpDown numericTime;
         private readonly Button buttonOk;
         private readonly Button buttonCancel;
+        private readonly FlowLayoutPanel footer;
         private float uiScale = 1f;
 
         public string TestTitle { get; private set; }
@@ -70,14 +71,27 @@ namespace TESTS
             };
             panel.Controls.Add(numericTime, 1, 2);
 
-            var footer = new FlowLayoutPanel
+            footer = new FlowLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 42,
-                FlowDirection = FlowDirection.RightToLeft
+                Height = 72,
+                FlowDirection = FlowDirection.RightToLeft,
+                WrapContents = false,
+                Padding = new Padding(8, 10, 8, 10)
             };
-            buttonOk = new Button { Text = "Сохранить", Width = 120 };
-            buttonCancel = new Button { Text = "Отмена", Width = 120, DialogResult = DialogResult.Cancel };
+            buttonOk = new Button
+            {
+                Text = "Сохранить",
+                Width = 190,
+                Height = 42
+            };
+            buttonCancel = new Button
+            {
+                Text = "Отменить и закрыть",
+                Width = 190,
+                Height = 42,
+                DialogResult = DialogResult.Cancel
+            };
             buttonOk.Click += buttonOk_Click;
             footer.Controls.Add(buttonOk);
             footer.Controls.Add(buttonCancel);
@@ -132,6 +146,23 @@ namespace TESTS
             UiTheme.StyleInput(numericTime, uiScale);
             UiTheme.StylePrimaryButton(buttonOk, uiScale);
             UiTheme.StyleSecondaryButton(buttonCancel, uiScale);
+
+            var buttonHeight = UiTheme.ScalePx(42, uiScale);
+            buttonOk.Height = buttonHeight;
+            buttonCancel.Height = buttonHeight;
+
+            var horizontalPadding = UiTheme.ScalePx(40, uiScale);
+            var minButtonWidth = UiTheme.ScalePx(180, uiScale);
+            buttonOk.Width = GetButtonWidthByText(buttonOk, horizontalPadding, minButtonWidth);
+            buttonCancel.Width = GetButtonWidthByText(buttonCancel, horizontalPadding, minButtonWidth);
+            footer.Height = UiTheme.ScalePx(74, uiScale);
+        }
+
+        private static int GetButtonWidthByText(Button button, int horizontalPadding, int minWidth)
+        {
+            var measuredWidth = TextRenderer.MeasureText(button.Text ?? string.Empty, button.Font).Width + horizontalPadding;
+            return Math.Max(minWidth, measuredWidth);
         }
     }
 }
+

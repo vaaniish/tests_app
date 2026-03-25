@@ -12,6 +12,8 @@ namespace TESTS
         private List<Test> tests = new List<Test>();
         private Test selectedTest;
         private readonly ToolTip comboToolTip = new ToolTip();
+        private readonly Button buttonEditTestInfo;
+        private readonly Button buttonPreviewRun;
         private float uiScale = 1f;
 
         public admin_panel()
@@ -23,6 +25,22 @@ namespace TESTS
             MinimumSize = new Size(1080, 640);
             WindowState = FormWindowState.Maximized;
             baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+
+            buttonEditTestInfo = new Button
+            {
+                Text = "Изменить параметры теста",
+                FlatStyle = FlatStyle.Flat
+            };
+            buttonEditTestInfo.Click += buttonEditTestInfo_Click;
+            Controls.Add(buttonEditTestInfo);
+
+            buttonPreviewRun = new Button
+            {
+                Text = "Тестовый прогон",
+                FlatStyle = FlatStyle.Flat
+            };
+            buttonPreviewRun.Click += buttonPreviewRun_Click;
+            Controls.Add(buttonPreviewRun);
 
             ApplyAdaptiveTypography();
 
@@ -70,48 +88,68 @@ namespace TESTS
         {
             var margin = UiTheme.ScalePx(12, uiScale);
             var gap = UiTheme.ScalePx(8, uiScale);
-            var leftMinWidth = UiTheme.ScalePx(520, uiScale);
-            var rightMinWidth = UiTheme.ScalePx(320, uiScale);
-            var preferredRight = GetPreferredComboWidth();
-            var rightMaxByRatio = (int)(ClientSize.Width * 0.42f);
-            var rightMaxByPixels = UiTheme.ScalePx(680, uiScale);
+            var leftMinWidth = UiTheme.ScalePx(460, uiScale);
+            var rightMinWidth = UiTheme.ScalePx(340, uiScale);
+            var topComboHeight = UiTheme.ScalePx(36, uiScale);
+
+            comboBox1.SetBounds(
+                margin,
+                margin,
+                Math.Max(UiTheme.ScalePx(360, uiScale), ClientSize.Width - margin * 2),
+                topComboHeight
+            );
+            UpdateComboDropDownWidth();
+
+            var preferredRight = GetPreferredActionPanelWidth();
+            var rightMaxByRatio = (int)(ClientSize.Width * 0.35f);
+            var rightMaxByPixels = UiTheme.ScalePx(560, uiScale);
             var rightMaxByLayout = ClientSize.Width - margin * 2 - gap - leftMinWidth;
             var rightMaxWidth = Math.Max(rightMinWidth, Math.Min(Math.Min(rightMaxByRatio, rightMaxByPixels), rightMaxByLayout));
             var rightWidth = Clamp(preferredRight, rightMinWidth, rightMaxWidth);
             var rightX = ClientSize.Width - rightWidth - margin;
 
-            comboBox1.SetBounds(rightX, margin, rightWidth, UiTheme.ScalePx(36, uiScale));
-            UpdateComboDropDownWidth();
-
-            var buttonsTop = comboBox1.Bottom + gap;
+            var contentTop = comboBox1.Bottom + gap;
+            var buttonsTop = contentTop;
+            var buttonCount = 5;
             var freeHeight = ClientSize.Height - buttonsTop - margin;
-            var buttonMin = UiTheme.ScalePx(84, uiScale);
-            var buttonMax = UiTheme.ScalePx(180, uiScale);
-            var buttonHeight = Math.Min(buttonMax, Math.Max(buttonMin, (freeHeight - gap * 2) / 3));
+            var buttonMin = UiTheme.ScalePx(56, uiScale);
+            var buttonMax = UiTheme.ScalePx(160, uiScale);
+            var buttonHeight = Math.Min(buttonMax, Math.Max(buttonMin, (freeHeight - gap * (buttonCount - 1)) / buttonCount));
 
-            button1.SetBounds(rightX, buttonsTop, rightWidth, buttonHeight);
+            // Порядок по приоритету: тестовый прогон, параметры теста, вопросы, тесты, удаление.
+            buttonPreviewRun.SetBounds(rightX, buttonsTop, rightWidth, buttonHeight);
+            buttonEditTestInfo.SetBounds(rightX, buttonPreviewRun.Bottom + gap, rightWidth, buttonHeight);
+            button1.SetBounds(rightX, buttonEditTestInfo.Bottom + gap, rightWidth, buttonHeight);
             button2.SetBounds(rightX, button1.Bottom + gap, rightWidth, buttonHeight);
             button3.SetBounds(rightX, button2.Bottom + gap, rightWidth, buttonHeight);
 
             var gridWidth = Math.Max(UiTheme.ScalePx(420, uiScale), rightX - margin - gap);
-            dataGridView1.SetBounds(margin, margin, gridWidth, ClientSize.Height - margin * 2);
+            dataGridView1.SetBounds(margin, contentTop, gridWidth, ClientSize.Height - contentTop - margin);
         }
 
-        private int GetPreferredComboWidth()
+        private int GetPreferredActionPanelWidth()
         {
-            var width = UiTheme.ScalePx(300, uiScale);
-
-            using (var g = comboBox1.CreateGraphics())
+            var width = UiTheme.ScalePx(340, uiScale);
+            var buttonTexts = new[]
             {
-                foreach (var test in tests)
+                buttonPreviewRun?.Text ?? string.Empty,
+                buttonEditTestInfo?.Text ?? string.Empty,
+                button1?.Text ?? string.Empty,
+                button2?.Text ?? string.Empty,
+                button3?.Text ?? string.Empty
+            };
+
+            using (var g = CreateGraphics())
+            {
+                foreach (var text in buttonTexts)
                 {
-                    var measured = TextRenderer.MeasureText(g, test.Title ?? string.Empty, comboBox1.Font).Width + 40;
+                    var measured = TextRenderer.MeasureText(g, text, Font).Width + UiTheme.ScalePx(48, uiScale);
                     if (measured > width)
                         width = measured;
                 }
             }
 
-            return Math.Min(width, Math.Max(UiTheme.ScalePx(300, uiScale), (int)(ClientSize.Width * 0.42)));
+            return width;
         }
 
         private void UpdateComboDropDownWidth()
@@ -131,9 +169,7 @@ namespace TESTS
             }
 
             var screen = Screen.FromControl(this).WorkingArea;
-            var comboLeftOnScreen = comboBox1.PointToScreen(Point.Empty).X;
-            var availableToRight = screen.Right - comboLeftOnScreen - UiTheme.ScalePx(12, uiScale);
-            var max = Math.Max(comboBox1.Width, availableToRight);
+            var max = Math.Max(comboBox1.Width, screen.Width - UiTheme.ScalePx(24, uiScale));
             comboBox1.DropDownWidth = Math.Min(Math.Max(comboBox1.Width, width), max);
         }
 
@@ -159,10 +195,7 @@ namespace TESTS
 
             if (dataGridView1.Columns.Contains("TrueAnswer"))
             {
-                var col = dataGridView1.Columns["TrueAnswer"];
-                col.HeaderText = "Статус ответа";
-                col.Width = Math.Max(UiTheme.ScalePx(170, uiScale), GetHeaderWidth(col.HeaderText));
-                col.ReadOnly = true;
+                dataGridView1.Columns["TrueAnswer"].Visible = false;
             }
 
             if (dataGridView1.Columns.Contains("ShowAnswer"))
@@ -207,8 +240,8 @@ namespace TESTS
             if (dataGridView1.Columns.Contains("ShowAnswer"))
                 return;
 
-            var insertIndex = dataGridView1.Columns.Contains("TrueAnswer")
-                ? dataGridView1.Columns["TrueAnswer"].Index + 1
+            var insertIndex = dataGridView1.Columns.Contains("Answers")
+                ? dataGridView1.Columns["Answers"].Index + 1
                 : dataGridView1.Columns.Count;
 
             var showColumn = new DataGridViewButtonColumn
@@ -250,6 +283,8 @@ namespace TESTS
                 selectedTest = null;
                 dataGridView1.Rows.Clear();
             }
+
+            UpdateWindowTitle();
         }
 
         private void SaveTests()
@@ -271,19 +306,58 @@ namespace TESTS
             {
                 comboBox1.SelectedIndex = 0;
             }
+
+            UpdateWindowTitle();
         }
 
         private void comboBox1_SelectedIndexChanged(object sender, EventArgs e)
         {
             selectedTest = comboBox1.SelectedItem as Test;
             comboToolTip.SetToolTip(comboBox1, selectedTest?.Title ?? string.Empty);
+            UpdateWindowTitle();
             LoadQuestions();
         }
 
         private void comboBox1_DoubleClick(object sender, EventArgs e)
         {
+            EditSelectedTestInfo();
+        }
+
+        private void buttonEditTestInfo_Click(object sender, EventArgs e)
+        {
+            EditSelectedTestInfo();
+        }
+
+        private void buttonPreviewRun_Click(object sender, EventArgs e)
+        {
             if (selectedTest == null)
+            {
+                MessageBox.Show("Тест не выбран");
                 return;
+            }
+
+            using (var runForm = new test_panel(selectedTest, true))
+            {
+                runForm.ShowDialog(this);
+            }
+
+            BeginInvoke(new Action(() =>
+            {
+                if (WindowState == FormWindowState.Minimized)
+                    WindowState = FormWindowState.Maximized;
+
+                Activate();
+                BringToFront();
+            }));
+        }
+
+        private void EditSelectedTestInfo()
+        {
+            if (selectedTest == null)
+            {
+                MessageBox.Show("Тест не выбран");
+                return;
+            }
 
             using (var form = new TestEditorForm(selectedTest))
             {
@@ -315,25 +389,10 @@ namespace TESTS
                 row.Height = UiTheme.ScalePx(38, uiScale);
                 row.Cells["Question"].Value = q.Text;
                 row.Cells["Answers"].Value = q.Options != null ? string.Join("; ", q.Options) : string.Empty;
-                row.Cells["TrueAnswer"].Value = GetAnswerStateText(q);
                 row.Cells["Column1"].Value = GetTypeName(q.Type);
                 row.Cells["Edit"].Value = "Изменить";
                 row.Cells["Delete"].Value = "Удалить";
             }
-        }
-
-        private static string GetAnswerStateText(Question q)
-        {
-            if (!string.IsNullOrWhiteSpace(q.Answer))
-                return "Задан";
-
-            if (!string.IsNullOrWhiteSpace(q.AnswerEncrypted))
-                return "Задан (зашифрован)";
-
-            if (!string.IsNullOrWhiteSpace(q.AnswerHash))
-                return "Задан (legacy хеш)";
-
-            return "Не задан";
         }
 
         private void dataGridView1_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -347,7 +406,7 @@ namespace TESTS
             if (IsFinalAutoQuestion(question) && (columnName == "Edit" || columnName == "Delete"))
             {
                 MessageBox.Show(
-                    "Этот вопрос автоматически подтягивается из уровней 1-4.\n" +
+                    "Этот вопрос автоматически подтягивается из других тестов.\n" +
                     "Измените его в исходном тесте, либо создайте отдельный вопрос в итоговом.",
                     "Автоматический вопрос итогового",
                     MessageBoxButtons.OK,
@@ -580,6 +639,8 @@ namespace TESTS
             UiTheme.StyleInput(comboBox1, uiScale);
             UiTheme.StylePrimaryButton(button1, uiScale);
             UiTheme.StyleSecondaryButton(button2, uiScale);
+            UiTheme.StyleSecondaryButton(buttonEditTestInfo, uiScale);
+            UiTheme.StyleSecondaryButton(buttonPreviewRun, uiScale);
             UiTheme.StyleDangerButton(button3, uiScale);
 
             dataGridView1.ColumnHeadersDefaultCellStyle.Font = UiTheme.CreateFont(13f, uiScale, FontStyle.Bold);
@@ -587,6 +648,13 @@ namespace TESTS
             dataGridView1.RowTemplate.Height = UiTheme.ScalePx(38, uiScale);
             dataGridView1.ColumnHeadersHeight = UiTheme.ScalePx(46, uiScale);
             ConfigureGridBehavior();
+        }
+
+        private void UpdateWindowTitle()
+        {
+            Text = selectedTest == null
+                ? "Панель преподавателя"
+                : "Панель преподавателя — " + selectedTest.Title;
         }
 
         private static int Clamp(int value, int min, int max)
