@@ -715,8 +715,6 @@ public static class TestStorage
         if (!DefaultAnswerMap.Value.TryGetValue(fingerprint, out var candidates))
             return;
 
-        // Р‘С‹СЃС‚СЂР°СЏ РјРёРіСЂР°С†РёСЏ legacy hash->enc РїРѕ РѕС‚РїРµС‡Р°С‚РєСѓ РІРѕРїСЂРѕСЃР°.
-        // РџСЂРѕРІРµСЂРєСѓ hash Р·РґРµСЃСЊ РЅРµ РґРµР»Р°РµРј, С‡С‚РѕР±С‹ РЅРµ Р±Р»РѕРєРёСЂРѕРІР°С‚СЊ Р·Р°РїСѓСЃРє UI.
         var candidate = candidates.FirstOrDefault();
         if (!string.IsNullOrWhiteSpace(candidate))
         {

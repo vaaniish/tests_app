@@ -1,5 +1,4 @@
-using System;
-using System.IO;
+﻿using System;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -43,22 +42,8 @@ namespace TESTS
 
         private static void HandleFatalException(string title, Exception ex)
         {
-            try
-            {
-                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "startup_error.log");
-                File.AppendAllText(
-                    path,
-                    $"[{DateTime.Now:yyyy-MM-dd HH:mm:ss}] {title}{Environment.NewLine}{ex}{Environment.NewLine}{Environment.NewLine}"
-                );
-            }
-            catch
-            {
-                // Игнорируем ошибки логирования, чтобы не скрыть исходную проблему.
-            }
-
             MessageBox.Show(
-                title + Environment.NewLine + ex.Message +
-                Environment.NewLine + "Подробности записаны в startup_error.log",
+                title + Environment.NewLine + ex.Message,
                 "Ошибка запуска",
                 MessageBoxButtons.OK,
                 MessageBoxIcon.Error
